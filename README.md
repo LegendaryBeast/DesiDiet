@@ -22,10 +22,10 @@ Create a virtual environment and install the required Python packages:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r graphRAG/requirements.txt
 ```
 
-Ensure your `.env` file in the root directory matches your Neo4j setup:
+Ensure your `.env` file (now located inside the `graphRAG/` folder) matches your Neo4j setup:
 ```env
 NEO4J_MODE=docker
 NEO4J_DOCKER_URI=bolt://localhost:7687
@@ -36,6 +36,9 @@ NEO4J_DOCKER_PASSWORD=khadok2025
 ### 3. Data Processing & Knowledge Graph Ingestion
 First, clean and normalize the raw Bangladeshi food CSV datasets, then ingest them into the Neo4j knowledge graph along with the NDG 2025 dietary rules:
 ```bash
+# Navigate to the graphRAG engine directory
+cd graphRAG
+
 # Clean the raw dataset
 python3 preprocessing/clean_csv.py
 
@@ -46,6 +49,7 @@ python3 build_graph.py
 ### 4. Running the Engine
 You can test the GraphRAG reasoning engine directly to see the personalized safe foods and macro calculations in action:
 ```bash
+cd graphRAG
 python3 graph_rag/engine.py
 ```
 
@@ -55,7 +59,7 @@ python3 graph_rag/engine.py
 
 The system utilizes a hybrid database model to link static nutritional knowledge with dynamic user profiles. Below is the Entity-Relationship (ER) diagram detailing the data structure.
 
-![Database Schema](schema.png)
+![Database Schema](graphRAG/schema.png)
 
 ### Core Components
 
