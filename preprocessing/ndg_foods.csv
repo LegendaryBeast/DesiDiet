@@ -1,0 +1,79 @@
+code,name_en,name_bn,food_group,energy_kcal,protein_g,fat_g,carbohydrate_g,fiber_g,serving_size_g,serving_unit,popularity_rank,source_table,age_group_target,is_staple,gi_category
+NDG_001,Rice (white),ভাত,Cereals & Grains,344,6.5,0.4,77,0.6,100,g,1,Table 7-13 + Annex 5,All,true,high
+NDG_002,Wheat flour roti (Ata),আটা রুটি,Cereals & Grains,333,11.3,2.1,62,10.7,30,g,1,Table 7-13,All,true,medium
+NDG_003,Chira (Flattened rice),চিড়া,Cereals & Grains,356,4.7,0.7,56,2.2,30,g,2,Table 11-12,All,false,medium
+NDG_004,Muri (Puffed rice),মুড়ি,Cereals & Grains,360,5.0,0.1,60,1.4,30,g,2,Table 13 + Annex 7,All,false,high
+NDG_005,Brown rice,বাদামী চাল,Cereals & Grains,362,7.5,2.7,76,3.5,100,g,3,Guideline 2 DM,Adult,false,medium
+NDG_006,Oats,ওটস,Cereals & Grains,389,16.9,6.9,66,10.6,30,g,4,Guideline 2-5 years,All,false,low
+NDG_007,Potato,আলু,Roots & Tubers,66,1.2,0.2,14,1.2,50,g,1,Table 7-13,All,true,high
+NDG_008,Sweet potato,মিষ্টি আলু,Roots & Tubers,86,1.6,0.1,20,3.0,50,g,3,Guideline 4 Renal,All,false,medium
+NDG_009,Beet,বিট,Roots & Tubers,46,2.0,0.1,8,2.8,100,g,3,Table 11-12,Adult,false,low
+NDG_010,Green banana,কাঁচকলা,Roots & Tubers,78,2.0,0.3,16,2.6,50,g,2,Table 13,All,false,low
+NDG_011,Masoor dal (Lentil),মসুর ডাল,Pulses & Legumes,317,27.7,0.8,43,4.8,30,g,1,Table 7-13 + Annex 7,All,true,low
+NDG_012,Chola dal (Bengal gram),ছোলার ডাল,Pulses & Legumes,350,20.3,6.0,44,3.9,30,g,2,Table 11 + Annex 7,All,false,low
+NDG_013,Mung dal (Green gram),মুগ ডাল,Pulses & Legumes,351,23.7,0.4,60,4.3,30,g,2,Table 12,All,false,low
+NDG_014,Soybean,সয়াবিন,Pulses & Legumes,424,32.9,19.9,20,4.5,30,g,3,Guideline DM,Adult,false,low
+NDG_015,Cowpeas,বরবটি,Pulses & Legumes,39,3.0,0.4,3,3.6,100,g,3,Table 12,All,false,low
+NDG_016,Peanuts/Groundnuts,বাদাম/চীনাবাদাম,Nuts & Seeds,587,22.5,46.6,8,8.5,15,g,2,Table 7-13,All,false,low
+NDG_017,Katla fish,কাতলা মাছ,Fish & Seafood,104,20.0,2.6,0,0,50,g,2,Table 8-13,All,false,none
+NDG_018,Mola fish,মলা মাছ,Fish & Seafood,146,17.0,8.2,0,0,50,g,2,Guideline 2-5 years,All,false,none
+NDG_019,Hilsha fish (Ilish),ইলিশ মাছ,Fish & Seafood,223,18.0,16.5,0,0,80,g,1,Guideline 3-6-9 years,All,false,none
+NDG_020,Tuna fish,টুনা মাছ,Fish & Seafood,118,25.0,1.0,0,0,80,g,3,General Guideline,Adult,false,none
+NDG_021,Kachki fish,কাচকি মাছ,Fish & Seafood,93,16.1,3.2,0,0,75,g,3,Table 11,All,false,none
+NDG_022,Tilapia fish,তেলাপিয়া মাছ,Fish & Seafood,96,20.1,1.7,0,0,80,g,2,Guideline 6 Lactation,All,false,none
+NDG_023,Pangash fish,পাঙ্গাশ মাছ,Fish & Seafood,105,15.0,5.0,0,0,80,g,2,Guideline 6 Lactation,All,false,none
+NDG_024,Prawn/Shrimp,চিংড়ি,Fish & Seafood,100,20.3,1.7,0,0,80,g,3,Guideline Salt,All,false,none
+NDG_025,Deshi chicken (Farm),দেশি মুরগি,Meat & Poultry,128,19.2,5.8,0,0,50,g,1,Table 7-13,All,false,none
+NDG_026,Chicken (broiler),ব্রয়লার মুরগি,Meat & Poultry,215,18.6,15.1,0,0,50,g,2,General Guideline,All,false,none
+NDG_027,Beef (lean),গরুর মাংস,Meat & Poultry,250,26.1,15.4,0,0,50,g,3,Guideline Pregnancy,Adult,false,none
+NDG_028,Mutton,খাসির মাংস,Meat & Poultry,258,16.0,21.4,0,0,50,g,3,Guideline Pregnancy,Adult,false,none
+NDG_029,Liver (chicken/goat),কলিজা,Meat & Poultry,165,26.0,6.2,0,0,50,g,4,Guideline TB + Cancer,Adult,false,none
+NDG_030,Egg (boiled),সিদ্ধ ডিম,Eggs,158,12.6,11.2,0,0,60,g,1,Table 7-13,All,true,none
+NDG_031,Cow's milk (whole),গরুর দুধ,Milk & Dairy,63,3.1,3.7,4.4,0,150,ml,1,Table 7-13,All,true,none
+NDG_032,Curd/Yogurt,দই,Milk & Dairy,94,3.2,4.0,11,0,150,ml,2,Table 12-13,All,false,low
+NDG_033,Sweet curd,মিষ্টি দই,Milk & Dairy,95,3.2,4.0,12,0,75,g,3,Table 7,Child,false,medium
+NDG_034,Buttermilk (Ghol),ঘোল,Milk & Dairy,40,3.3,0.9,4.8,0,150,ml,3,General Guideline,Adult,false,low
+NDG_035,Pat shak (Jute leaves),পাট শাক,Leafy Vegetables,32,2.9,0.3,2,1.5,75,g,2,Table 7-8,All,false,low
+NDG_036,Data shak (Amaranth),ডাটা শাক,Leafy Vegetables,25,2.0,0.3,1,2.3,75,g,2,Table 12-13,All,false,low
+NDG_037,Lal shak (Red amaranth),লাল শাক,Leafy Vegetables,32,1.6,0.3,5,2.0,100,g,2,Annex 7,All,false,low
+NDG_038,Pui shak (Indian spinach),পুঁই শাক,Leafy Vegetables,25,2.2,0.3,2,1.0,100,g,2,Annex 7,All,false,low
+NDG_039,Palong shak (Spinach),পালং শাক,Leafy Vegetables,23,2.9,0.4,3,2.2,100,g,2,Guideline DM + Cancer,All,false,low
+NDG_040,Methi shak (Fenugreek),মেথি শাক,Leafy Vegetables,49,4.4,0.9,6,3.9,50,g,3,Guideline 2-5 years,All,false,low
+NDG_041,Kolmi shak (Water spinach),কলমি শাক,Leafy Vegetables,19,2.6,0.3,3,2.1,100,g,3,General Guideline,All,false,low
+NDG_042,Bottle gourd (Lau),লাউ,Other Vegetables,34,1.1,0.1,7,1.0,100,g,1,Table 7-13 + Annex 7,All,true,low
+NDG_043,Pumpkin (Kumra),কুমড়া,Other Vegetables,18,1.4,0.3,1,0.5,100,g,2,Table 7-13,All,false,low
+NDG_044,Okra/Ladies finger (Dherosh),ঢেঁড়স,Other Vegetables,40,2.1,0.2,6,3.2,50,g,2,Table 8 + Guideline DM,All,false,low
+NDG_045,Bitter gourd (Korola),করলা,Other Vegetables,32,2.1,0.3,4,2.8,50,g,3,Table 13 + Guideline DM,Adult,false,low
+NDG_046,Drumstick (Sojne),সজনে,Other Vegetables,43,2.9,0.2,5,2.0,150,g,3,Table 12,All,false,low
+NDG_047,Shim (Flat bean),শিম,Other Vegetables,54,3.9,2.0,3,1.0,100,g,3,Table 12,All,false,low
+NDG_048,Cucumber (Shosha),শসা,Other Vegetables,18,0.8,0.1,2,0.5,50,g,2,Table 12 + Guideline DM,All,false,low
+NDG_049,Tomato,টমেটো,Other Vegetables,18,0.9,0.2,4,1.2,50,g,2,Guideline DM,All,false,low
+NDG_050,Cabbage (Badhakopi),বাঁধাকপি,Other Vegetables,25,1.3,0.1,6,2.5,100,g,3,Guideline DM + Cancer,All,false,low
+NDG_051,Cauliflower (Fulkopi),ফুলকপি,Other Vegetables,25,1.9,0.3,5,2.0,100,g,3,Guideline DM,All,false,low
+NDG_052,Broccoli,ব্রকলি,Other Vegetables,34,2.8,0.4,7,2.6,100,g,4,Guideline Liver + Cancer,Adult,false,low
+NDG_053,Carrot (Gajor),গাজর,Other Vegetables,41,0.9,0.2,10,2.8,100,g,2,Guideline Cancer,All,false,low
+NDG_054,Banana (ripe),পাকা কলা,Fruits,95,1.3,0.8,19,2.6,100,g,1,Table 7-13 + Annex 4,All,true,medium
+NDG_055,Guava (Peyara),পেয়ারা,Fruits,64,1.0,0.5,20,5.4,50,g,2,Table 12-13,All,false,low
+NDG_056,Mango (ripe),পাকা আম,Fruits,60,0.8,0.4,18,1.6,50,g,2,Table 7 + Guideline Pregnancy,All,false,medium
+NDG_057,Apple,আপেল,Fruits,52,0.3,0.1,12,2.4,50,g,3,Table 13,All,false,low
+NDG_058,Papaya (ripe),পাকা পেঁপে,Fruits,43,0.5,0.3,11,1.7,100,g,3,Guideline Lactation + Cancer,All,false,low
+NDG_059,Watermelon,তরমুজ,Fruits,30,0.6,0.2,8,0.4,100,g,3,Annex 7,All,false,high
+NDG_060,Amla (Indian gooseberry),আমলকি,Fruits,44,0.9,0.6,10,4.3,50,g,4,Guideline Adolescent + Cancer,All,false,low
+NDG_061,Green coconut water,ডাবের পানি,Fruits,19,0.7,0.2,4,1.1,200,ml,2,Guideline 5 Water + Diarrhoea,All,false,low
+NDG_062,Soybean oil,সয়াবিন তেল,Oils & Fats,900,0,100,0,0,5,ml,1,Table 7-13,All,true,none
+NDG_063,Mustard oil,সরিষার তেল,Oils & Fats,900,0,100,0,0,5,ml,2,Guideline 1 General,All,false,none
+NDG_064,Olive oil,অলিভ অয়েল,Oils & Fats,900,0,100,0,0,5,ml,4,Guideline DM + Heart,Adult,false,none
+NDG_065,Butter,মাখন,Oils & Fats,717,0.9,81.1,0.1,0,5,g,3,Guideline Fat,All,false,none
+NDG_066,Ghee,ঘি,Oils & Fats,900,0,99.5,0,0,5,g,3,Guideline Fat,All,false,none
+NDG_067,Spices mix (onion+garlic+turmeric+chilli),মসলা মিশ্রণ,Spices & Condiments,250,0,0,0,0,20,g,1,Table 7-13,All,true,none
+NDG_068,Gur (Jaggery/Molasses),গুড়,Sugars & Sweets,383,0.4,0.1,95,0,10,g,2,Annex 7,All,false,high
+NDG_069,Sugar (refined),চিনি,Sugars & Sweets,400,0,0,100,0,5,g,2,Guideline 4 Sugar,All,false,high
+NDG_070,Honey,মধু,Sugars & Sweets,304,0.3,0,82,0.2,10,g,3,Guideline 4 Sugar,All,false,high
+NDG_071,Chichinga (Snake gourd),চিচিঙ্গা,Other Vegetables,20,0.5,0.3,3,0.6,125,g,3,Annex 7,All,false,low
+NDG_072,Vetki fish (dry),শুটকি বেটকি,Fish & Seafood,300,60.0,5.0,0,0,30,g,3,Guideline 2-5 years Calcium,All,false,none
+NDG_073,Ruhi fish,রুই মাছ,Fish & Seafood,97,16.6,3.6,0,0,80,g,2,Guideline 6-9 years,All,false,none
+NDG_074,Tengra fish (dry),শুটকি তেংরা,Fish & Seafood,328,70.9,4.5,0,0,30,g,3,Guideline Iron sources,All,false,none
+NDG_075,Sago (Sabudana),সাগু,Cereals & Grains,332,0.2,0.1,83,0,30,g,4,Guideline Diarrhoea,All,false,high
+NDG_076,Bread (whole wheat),গমের রুটি/পাউরুটি,Cereals & Grains,247,13.0,3.4,41,6.8,30,g,2,Guideline DM,All,false,medium
+NDG_077,Lemon/Lime,লেবু,Fruits,29,1.1,0.3,9,2.8,50,g,2,Guideline 5 Water,All,false,low
+NDG_078,Khoi (Popped rice),খই,Cereals & Grains,390,6.4,0.5,87,0.6,30,g,3,Guideline Iron sources,All,false,high
