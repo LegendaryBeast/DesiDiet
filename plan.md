@@ -1,0 +1,605 @@
+# Khadok-Bangla AI — Backend & Mobile Implementation Plan
+
+> **Goal:** Build an Android app using **Expo Go + React Native** for Khadok-Bangla AI (DesiDiet), a personalized AI nutrition companion for Bangladeshi people grounded in the National Dietary Guidelines for Bangladesh 2025 (NDG 2025).
+>
+> **Approach:** Backend first, review, then frontend. Reuse the existing `graphRAG/` knowledge graph as the system's brain.
+>
+> **Stack Decisions (Updated):**
+> - **LLM:** xAI Grok API (OpenAI-compatible)
+> - **ORM:** Prisma Client Python (instead of SQLAlchemy)
+> - **Frontend State:** TanStack Query (instead of legacy React Query naming)
+
+---
+
+## 1. Current State Assessment
+
+### What Exists
+
+| Component | Status | Location |
+|---|---|---|
+| **GraphRAG Engine** | Functional — Neo4j KG with Bangladeshi foods, NDG 2025 dietary rules, calorie engine, Cypher queries | `graphRAG/` |
+| **Web Frontend** | Beautiful React + Vite UI with Bengali typography, chat mockup, profile wizard, meal plan views | `frontend/` |
+| **Backend API** | **MISSING** — no API layer connects the graphRAG to any client | — |
+
+### Critical Gap
+The web frontend stores the profile in `localStorage`, simulates chat responses with `setTimeout`, and calculates calories client-side. There is **no persistent user data, no real AI chat, and no dynamic meal plan generation**.
+
+The mobile app **requires** a backend to:
+- Authenticate & persist users
+- Store profiles, health logs, and meal plans
+- Query the Neo4j graph on behalf of users
+- Generate meal plans via LLM + GraphRAG
+- Stream bilingual chat responses
+
+---
+
+## 2. High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           ANDROID APP (Expo Go)                         │
+│  React Native + Expo Router + TanStack Query + Zustand + Recharts      │
+│  Bilingual UI (BN/EN) — reuses design language from existing web UI    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │ HTTPS / REST + SSE
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BACKEND API (FastAPI)                           │
+│  Async Python • JWT Auth • SSE Streaming • Pydantic Validation         │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  Routers: Auth │ Profile │ HealthLog │ MealPlan │ Chat │ Foods │ Report │
+│  Services: MealPlanGenerator │ ChatOrchestrator │ ReportBuilder        │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  Core: Security (JWT) │ LLM Client (xAI Grok — OpenAI-compatible)      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+            ┌───────────┐   ┌───────────┐   ┌───────────┐
+            │ PostgreSQL│   │  Neo4j    │   │   Redis   │
+            │User Data  │   │Knowledge  │   │  Session  │
+            │Health Logs│   │  Graph    │   │   Cache   │
+            │Meal Plans │   │(graphRAG) │   │ Chat Mem  │
+            └───────────┘   └───────────┘   └───────────┘
+```
+
+---
+
+## 3. Tech Stack
+
+| Layer | Technology | Rationale |
+|---|---|---|
+| API Framework | **FastAPI** (async) | Native SSE support, auto OpenAPI/Swagger docs, Python ecosystem |
+| User Database | **PostgreSQL 16** | Robust JSONB support, matches NDG spec |
+| ORM | **Prisma Client Python** | Type-safe generated client, declarative schema, built-in migrations |
+| Migrations | **Prisma Migrate** | `prisma migrate dev` — schema-driven, no Alembic needed |
+| Auth | **JWT** (access + refresh) | Stateless, mobile-friendly, no cookie dependency |
+| Cache / Sessions | **Redis 7** | Chat turn cache, rate limiting, short-term memory (2h TTL) |
+| Knowledge Graph | **Neo4j** (existing) | Reuse `graphRAG/` exactly; Docker or AuraDB |
+| LLM | **xAI Grok** (`grok-beta` / `grok-4.20-reasoning`) | Provided API key, OpenAI-compatible client, excellent reasoning |
+| Chat Streaming | **SSE** (Server-Sent Events) | Works over mobile HTTP, simpler than WebSockets, auto-reconnects |
+| Meal Planning | **GraphRAG → LLM Pipeline** | Safe foods from Neo4j → structured prompt → JSON meal plan |
+| Local Dev | **Docker Compose** | One command: `docker compose up` spins up Postgres + Neo4j + Redis + Backend |
+
+---
+
+## 4. Project Structure
+
+```
+DesiDiet/
+├── backend/                          # NEW — Backend API
+│   ├── prisma/
+│   │   ├── schema.prisma             # Prisma schema (source of truth)
+│   │   └── migrations/               # Auto-generated by Prisma Migrate
+│   ├── app/
+│   │   ├── main.py                   # FastAPI entry point, CORS, lifespan events
+│   │   ├── config.py                 # Pydantic Settings (.env loader)
+│   │   ├── db.py                     # Prisma client singleton + lifespan management
+│   │   ├── schemas.py                # Pydantic request/response DTOs
+│   │   ├── dependencies.py           # get_current_user() JWT dependency
+│   │   ├── core/
+│   │   │   ├── security.py           # pwd_context, create_access_token, verify_token
+│   │   │   └── llm_client.py         # Async xAI Grok client (OpenAI SDK compatible)
+│   │   ├── services/
+│   │   │   ├── auth_service.py
+│   │   │   ├── profile_service.py
+│   │   │   ├── health_log_service.py
+│   │   │   ├── meal_plan_service.py  # Integrates calorie_engine + GraphRAG + Grok
+│   │   │   └── chat_service.py       # Intent detection + routing + LLM streaming
+│   │   └── routers/
+│   │       ├── auth.py
+│   │       ├── profile.py
+│   │       ├── health_log.py
+│   │       ├── meal_plan.py
+│   │       ├── chat.py               # POST /chat → SSE stream
+│   │       ├── foods.py              # Search + safe foods (GraphRAG)
+│   │       └── report.py             # Nutrition requirements summary
+│   │
+│   ├── graph_rag_bridge/             # Bridges to existing graphRAG modules
+│   │   └── __init__.py               # Re-exports from ../graphRAG/graph_rag
+│   │
+│   ├── tests/                        # Pytest suite
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── docker-compose.yml            # Postgres + Neo4j + Redis + Backend
+│
+├── graphRAG/                         # EXISTING — Unchanged
+│   ├── graph_rag/
+│   │   ├── engine.py                 # KhadokGraphRAG (Neo4j queries)
+│   │   ├── calorie_engine.py         # NDG 2025 calorie calculations
+│   │   ├── dietary_rules_data.py     # NDG rules in Python
+│   │   ├── ingestion.py              # Neo4j data loader
+│   │   └── config.py                 # Neo4j credentials
+│   ├── preprocessing/
+│   ├── build_graph.py
+│   └── requirements.txt
+│
+├── frontend/                         # EXISTING — Web UI (unchanged for now)
+│   └── ...
+│
+└── plan.md                           # This document
+```
+
+---
+
+## 5. Database Schema (Prisma)
+
+```prisma
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  phone        String?  @unique
+  email        String?  @unique
+  passwordHash String   @map("password_hash")
+  language     String   @default("bn")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  profile      Profile?
+  healthLogs   HealthLog[]
+  mealPlans    MealPlan[]
+  chatMessages ChatMessage[]
+
+  @@map("users")
+}
+
+model Profile {
+  userId            String   @id @map("user_id")
+  user              User     @relation(fields: [userId], references: [id])
+
+  nameBn            String?  @map("name_bn")
+  nameEn            String?  @map("name_en")
+  age               Int?
+  gender            String?
+  weightKg          Float?   @map("weight_kg")
+  heightCm          Float?   @map("height_cm")
+  activityLevel     String?  @map("activity_level")
+  goal              String?
+  medicalConditions Json?    @map("medical_conditions")
+  preferredFoods    Json?    @map("preferred_foods")
+  dislikedFoods     Json?    @map("disliked_foods")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+model HealthLog {
+  logId         String   @id @default(uuid()) @map("log_id")
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+
+  logDate       DateTime @default(now()) @map("log_date")
+  weightKg      Float?   @map("weight_kg")
+  bloodPressure String?  @map("blood_pressure")
+  bloodSugar    Float?   @map("blood_sugar")
+  hba1c         Float?
+  notes         String?
+  symptoms      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("health_logs")
+}
+
+model MealPlan {
+  planId         String   @id @default(uuid()) @map("plan_id")
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id])
+
+  planDate       DateTime @map("plan_date")
+  planType       String   @map("plan_type")
+  planData       Json     @map("plan_data")
+  calorieTarget  Int      @map("calorie_target")
+  language       String
+  feedback       Int?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("meal_plans")
+}
+
+model ChatMessage {
+  messageId String   @id @default(uuid()) @map("message_id")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+
+  role      String
+  content   String
+  intent    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
+```
+
+---
+
+## 6. API Endpoints
+
+### 6.1 Auth
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/auth/register` | — | Register with phone/email + password |
+| `POST` | `/auth/login` | — | Login, receive `{access_token, refresh_token, token_type}` |
+| `POST` | `/auth/refresh` | — | Exchange refresh token for new access token |
+| `GET` | `/auth/me` | Bearer | Current user info |
+
+### 6.2 Profile
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/profile` | Bearer | Create or full-update profile |
+| `PATCH` | `/profile` | Bearer | Partial update (e.g., only weight) |
+| `GET` | `/profile` | Bearer | Get profile + calculated nutrition targets |
+
+### 6.3 Health Log
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/health-logs` | Bearer | Add a daily log entry |
+| `GET` | `/health-logs` | Bearer | Get last 30 entries (paginated) |
+| `GET` | `/health-logs/trends` | Bearer | Weight/BP/sugar trend analysis |
+
+### 6.4 Meal Plan
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/meal-plans/daily` | Bearer | Generate today's plan (auto-saves) |
+| `GET` | `/meal-plans/weekly` | Bearer | Generate 7-day plan with variety enforcement |
+| `GET` | `/meal-plans/history` | Bearer | Past meal plans |
+| `POST` | `/meal-plans/{plan_id}/feedback` | Bearer | Rate a plan 1–5 |
+
+### 6.5 Chat
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/chat` | Bearer | Send message → SSE stream of AI response |
+
+**Request:**
+```json
+{
+  "message": "আজকের জন্য একটা খাবার পরিকল্পনা দাও",
+  "language": "bn"
+}
+```
+
+**Response:** SSE stream with tokens, ending with `[DONE]`.
+
+### 6.6 Foods (GraphRAG)
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/foods/search` | Bearer | `?q=dal` — search BN/EN/original names |
+| `GET` | `/foods/safe-foods` | Bearer | Get foods safe for user's conditions + goal |
+| `GET` | `/foods/{code}` | Bearer | Detailed food info with dietary rules |
+
+### 6.7 Report
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/reports/nutrition` | Bearer | Full report: BMI, IBW, calories, macros, micronutrients |
+| `GET` | `/reports/conditions` | Bearer | List of NDG 2025 dietary rules for user's conditions |
+
+---
+
+## 7. Core Services Design
+
+### 7.1 Meal Plan Generation Flow
+
+```
+User requests daily meal plan
+        │
+        ▼
+┌───────────────┐
+│ Load Profile  │ ← PostgreSQL via Prisma: latest profile + health log
+│ + Health Log  │
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ Calorie Engine│ ← Reuse calorie_engine.py
+│ (NDG 2025)    │   → BMI, IBW, target calories, macros
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ GraphRAG Query│ ← Reuse engine.py
+│ get_safe_foods│   → Top 50 safe, preferred, ranked foods
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ Season Filter │ → Filter by current month (Bangladesh seasons)
+│ Variety Filter│ → Exclude foods eaten yesterday
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ Build Prompt  │ → User context + safe foods + NDG rules + targets
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ Grok LLM Call │ → xAI API (/v1/chat/completions) → JSON meal plan + BN explanation
+│ (Streaming)   │
+└───────┬───────┘
+        ▼
+┌───────────────┐
+│ Save to DB    │ → PostgreSQL meal_plans table via Prisma
+│ Return JSON   │ → Mobile app renders meal cards
+└───────────────┘
+```
+
+### 7.2 Meal Plan JSON Schema (`plan_data` column)
+
+```json
+{
+  "target_calories": 1950,
+  "macros": { "protein_g": 73, "carbs_g": 268, "fat_g": 65, "fiber_g": 25 },
+  "explanation_bn": "আপনার ডায়াবেটিস এবং ওজন কমানোর লক্ষ্য মাথায় রেখে...",
+  "explanation_en": "Considering your diabetes and weight loss goal...",
+  "meals": [
+    {
+      "slot": "breakfast",
+      "slot_bn": "সকালের নাস্তা",
+      "target_calories": 390,
+      "items": [
+        {
+          "food_code": "01_0012",
+          "name_bn": "ভাত (পার্বয়েলড)",
+          "name_en": "Parboiled Rice",
+          "amount_g": 150,
+          "calories": 195,
+          "why_bn": "কম জিআই, রক্তে গ্লুকোজ বাড়ায় না"
+        }
+      ]
+    }
+  ],
+  "condition_rules_applied": ["Diabetes", "Weight_Loss"]
+}
+```
+
+### 7.3 Weekly Plan Logic
+
+- Run daily algorithm 7 times with **variety enforcement**.
+- Track protein source rotation: fish, chicken, eggs, lentils, paneer — no repeats within 2 days.
+- At least 4 of 7 days must feature fish (per NDG 2025).
+- Friday: slightly higher calorie allowance (cultural sensitivity).
+- One "detox" lighter day if goal is weight loss.
+
+### 7.4 Chat Service (Intent-Based Routing)
+
+The chat is not a simple passthrough to an LLM. It uses lightweight intent detection:
+
+| Detected Intent | Action |
+|---|---|
+| `meal_request` | Run MealPlanService → stream generated plan |
+| `health_log` | Extract entities (weight, BP, sugar) → save to DB → confirm |
+| `food_query` | GraphRAG.get_chatbot_context() → stream explanation |
+| `profile_update` | Extract fields → update profile → confirm |
+| `general` | Direct LLM response with user context in system prompt |
+
+**Context passed to every LLM call:**
+- Full user profile summary
+- Last 10 chat messages (from Redis/DB)
+- Latest health log
+- Calculated nutrition targets
+- Current language (`bn` or `en`)
+
+---
+
+## 8. Reuse Strategy (Existing Code)
+
+| Existing File | How It Is Reused |
+|---|---|
+| `graphRAG/graph_rag/engine.py` | Imported via `graph_rag_bridge`. `KhadokGraphRAG` class used directly. |
+| `graphRAG/graph_rag/calorie_engine.py` | Imported directly. `calculate_targets(profile)` used in Profile & Report endpoints. |
+| `graphRAG/graph_rag/dietary_rules_data.py` | Imported directly. Rules injected into LLM prompts for explainability. |
+| `graphRAG/graph_rag/ingestion.py` | Not used by backend runtime; keep for graph maintenance. |
+| `graphRAG/preprocessing/*.csv` | Data source for Neo4j; backend only reads from Neo4j, not CSVs. |
+| `frontend/` | **Not touched** during backend phase. Design tokens, color palette, and component patterns will be referenced during mobile frontend build. |
+
+---
+
+## 9. Docker Compose (Local Development)
+
+```yaml
+# backend/docker-compose.yml
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: khadok
+      POSTGRES_USER: khadok
+      POSTGRES_PASSWORD: khadok123
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+
+  neo4j:
+    image: neo4j:5.15-community
+    ports: ["7474:7474", "7687:7687"]
+    environment:
+      NEO4J_AUTH: neo4j/khadok2025
+    volumes: ["neo4j_data:/data"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  backend:
+    build: .
+    ports: ["8000:8000"]
+    env_file: [.env]
+    volumes: [".:/app"]
+    depends_on: [postgres, neo4j, redis]
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
+
+volumes:
+  postgres_data:
+  neo4j_data:
+```
+
+---
+
+## 10. Environment Variables (`.env`)
+
+```env
+# Database
+DATABASE_URL=postgresql://khadok:khadok123@localhost:5432/khadok
+
+# Neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=khadok2025
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# Auth
+JWT_SECRET=your-super-secret-long-random-key-min-32-chars
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# LLM — xAI Grok
+XAI_API_KEY=xai-...
+XAI_BASE_URL=https://api.x.ai/v1
+XAI_MODEL=grok-beta
+
+# App
+APP_NAME=Khadok-Bangla AI
+CORS_ORIGINS=http://localhost:8081,http://localhost:19006,exp://192.168.*:*
+```
+
+> **Note on CORS:** Expo Go runs on `exp://` URLs and local IPs. The backend CORS must allow these during development.
+> **Security:** The `.env` file is gitignored. Never commit API keys.
+
+---
+
+## 11. Implementation Milestones
+
+Build the backend in **5 reviewable milestones**. After each milestone, the API is testable via Swagger UI at `http://localhost:8000/docs`.
+
+### Milestone 1 — Project Scaffold & Database
+- [ ] Create `backend/` folder structure
+- [ ] Setup FastAPI, Prisma Client Python, Pydantic Settings
+- [ ] Write `prisma/schema.prisma` with all 5 models
+- [ ] Run initial Prisma migration
+- [ ] Create Docker Compose (Postgres + Neo4j + Redis + Backend)
+- [ ] Health check endpoint `GET /health`
+- [ ] Auto-generated OpenAPI docs working
+- [ ] `db.py` with Prisma client lifespan (connect/disconnect)
+
+### Milestone 2 — Authentication & Profile
+- [ ] Password hashing (bcrypt) + JWT access/refresh tokens
+- [ ] `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`
+- [ ] `POST /profile`, `PATCH /profile`, `GET /profile`
+- [ ] Profile returns calculated nutrition targets via `calorie_engine.py`
+- [ ] Pytest tests for auth & profile flows
+
+### Milestone 3 — Health Log & Food APIs
+- [ ] `POST /health-logs`, `GET /health-logs`, `GET /health-logs/trends`
+- [ ] Connect to existing Neo4j graph
+- [ ] `GET /foods/search?q=...`
+- [ ] `GET /foods/safe-foods` (uses user's conditions + goal from profile)
+- [ ] `GET /foods/{code}` with condition-specific rules
+- [ ] Seed/test data for manual API testing
+
+### Milestone 4 — Meal Plan Generation
+- [ ] `MealPlanService`: profile → calorie targets → GraphRAG → LLM prompt
+- [ ] `GET /meal-plans/daily` — returns structured JSON meal plan
+- [ ] `GET /meal-plans/weekly` — 7-day plan with variety enforcement
+- [ ] `GET /meal-plans/history`
+- [ ] `POST /meal-plans/{plan_id}/feedback`
+- [ ] Grok LLM structured output parsing (JSON mode)
+- [ ] Save generated plans to PostgreSQL via Prisma
+
+### Milestone 5 — Chat API & Polish
+- [ ] `ChatService` with intent detection (rule-based + lightweight LLM fallback)
+- [ ] `POST /chat` → SSE streaming endpoint
+- [ ] Context assembly: profile + health log + last 10 messages + nutrition targets
+- [ ] Route intents: `meal_request`, `health_log`, `food_query`, `profile_update`, `general`
+- [ ] `GET /reports/nutrition` — full NDG 2025 report
+- [ ] `GET /reports/conditions` — list applicable dietary rules
+- [ ] End-to-end test: register → create profile → request meal plan → chat
+- [ ] API documentation review + cleanup
+
+---
+
+## 12. Mobile Frontend Preview (Post-Backend)
+
+After backend review and approval, the mobile app will be built in `DesiDiet/mobile/`:
+
+| Feature | Tech |
+|---|---|
+| Framework | **Expo SDK 51** + React Native |
+| Navigation | **Expo Router** (file-based) |
+| State Management | **Zustand** (client) + **TanStack Query** (server state, caching) |
+| Styling | **NativeWind** (Tailwind for RN) |
+| Charts | **Recharts** or `react-native-gifted-charts` |
+| Bengali Font | `Hind Siliguri` via `@expo-google-fonts/hind-siliguri` |
+| i18n | `i18next` + `react-i18next` (reuse translation keys from web) |
+| API Client | Axios with interceptors for JWT refresh |
+| Chat | Custom component consuming SSE stream |
+
+**Key Screens:**
+1. **Onboarding** — Phone registration, OTP (or email)
+2. **Profile Wizard** — 7-step Bengali conversational setup
+3. **Dashboard** — Today's meal plan cards + calorie ring
+4. **Chat** — Bilingual AI companion with streaming
+5. **Health Log** — Quick daily log + trend charts
+6. **Weekly Plan** — 7-day calendar grid
+7. **Report** — Full nutrition requirements + condition rules
+
+---
+
+## 13. Testing Strategy
+
+| Layer | Tests |
+|---|---|
+| **Unit** | Calorie engine (10 profiles), BMI categories, JWT create/verify |
+| **Integration** | Auth flow, profile CRUD, health log trends, food search |
+| **GraphRAG** | Safe foods for each condition (diabetes, hypertension, etc.), avoid foods must not appear |
+| **LLM** | Structured output validity, Bengali food names present, no hallucinated foods |
+| **E2E** | Full user journey: register → profile → daily plan → chat → health log |
+
+---
+
+## 14. Security & Compliance Notes
+
+- **No health data in logs.** Passwords hashed with bcrypt. JWTs short-lived (30 min).
+- **LLM data privacy:** xAI API used; data handled per xAI terms. For production in Bangladesh, consider self-hosted Llama if data sovereignty is required.
+- **Disclaimer:** Every response and report includes: *"এটি একটি এআই পুষ্টি সহায়ক। গুরুতর স্বাস্থ্য সমস্যার জন্য নিবন্ধিত ডায়েটিশিয়ান বা চিকিৎসকের পরামর্শ নিন।"*
+- **API Key:** Stored in `.env` only. `.env` is gitignored. Never commit credentials.
+
+---
+
+## 15. LLM Provider: xAI Grok
+
+| Model | Use Case |
+|---|---|
+| `grok-beta` | Default for fast responses, meal plans, general chat |
+| `grok-4.20-reasoning` | Complex multi-condition reasoning, weekly plan generation |
+
+**Client Setup:** Uses standard `openai` Python SDK with custom `base_url="https://api.x.ai/v1"`.
+Swapping to OpenAI/Gemini/Claude is a one-line config change.
+
+---
+
+**Ready to begin Milestone 1?** Review this plan and let me know if you want any changes before I start writing code.

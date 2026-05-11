@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  phone        String?  @unique
+  email        String?  @unique
+  passwordHash String   @map("password_hash")
+  language     String   @default("bn")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  profile      Profile?
+  healthLogs   HealthLog[]
+  mealPlans    MealPlan[]
+  chatMessages ChatMessage[]
+
+  @@map("users")
+}
+
+model Profile {
+  userId            String   @id @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nameBn            String?  @map("name_bn")
+  nameEn            String?  @map("name_en")
+  age               Int?
+  gender            String?
+  weightKg          Float?   @map("weight_kg")
+  heightCm          Float?   @map("height_cm")
+  activityLevel     String?  @map("activity_level")
+  goal              String?
+  medicalConditions String?  @map("medical_conditions")
+  preferredFoods    String?  @map("preferred_foods")
+  dislikedFoods     String?  @map("disliked_foods")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+model HealthLog {
+  logId         String   @id @default(uuid()) @map("log_id")
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  logDate       DateTime @default(now()) @map("log_date")
+  weightKg      Float?   @map("weight_kg")
+  bloodPressure String?  @map("blood_pressure")
+  bloodSugar    Float?   @map("blood_sugar")
+  hba1c         Float?
+  notes         String?
+  symptoms      String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("health_logs")
+}
+
+model MealPlan {
+  planId         String   @id @default(uuid()) @map("plan_id")
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planDate       DateTime @map("plan_date")
+  planType       String   @map("plan_type")
+  planData       String   @map("plan_data")
+  calorieTarget  Int      @map("calorie_target")
+  language       String
+  feedback       Int?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("meal_plans")
+}
+
+model ChatMessage {
+  messageId String   @id @default(uuid()) @map("message_id")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role      String
+  content   String
+  intent    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
