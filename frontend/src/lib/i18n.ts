@@ -1,4 +1,4 @@
-  import i18n from 'i18next';
+import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
@@ -102,7 +102,7 @@ const resources = {
       chat: {
         title: 'দেশিডায়েট এআই',
         ai_name: 'দেশিডায়েট এআই',
-        active_status: 'সক্রিয় অ্যাসিস্ট্যান্ট',
+        active_status: 'সক্রিয় অ্যাসিস্ট্যান্ট',
         clear_chat: 'চ্যাট মুছুন',
         greeting_user: 'হাই, {{name}}',
         how_can_i_help: 'আমি আপনাকে আজ কীভাবে সাহায্য করতে পারি?',
