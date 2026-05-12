@@ -15,10 +15,12 @@ model User {
   language     String   @default("bn")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  profile      Profile?
-  healthLogs   HealthLog[]
-  mealPlans    MealPlan[]
-  chatMessages ChatMessage[]
+  profile           Profile?
+  healthLogs        HealthLog[]
+  mealPlans         MealPlan[]
+  chatMessages      ChatMessage[]
+  mealTrackings     MealTracking[]
+  medicineReminders MedicineReminder[]
 
   @@map("users")
 }
@@ -61,17 +63,18 @@ model HealthLog {
 }
 
 model MealPlan {
-  planId         String   @id @default(uuid()) @map("plan_id")
-  userId         String   @map("user_id")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String   @id @default(uuid()) @map("plan_id")
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  planDate       DateTime @map("plan_date")
-  planType       String   @map("plan_type")
-  planData       String   @map("plan_data")
-  calorieTarget  Int      @map("calorie_target")
-  language       String
-  feedback       Int?
-  createdAt      DateTime @default(now()) @map("created_at")
+  planDate        DateTime @map("plan_date")
+  planType        String   @map("plan_type")
+  planData        String   @map("plan_data")
+  calorieTarget   Int      @map("calorie_target")
+  language        String
+  feedback        Int?
+  completedSlots  String?  @map("completed_slots") // JSON array: ["breakfast","lunch"]
+  createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("meal_plans")
 }
@@ -87,4 +90,37 @@ model ChatMessage {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("chat_messages")
+}
+
+model MealTracking {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  inputText   String   @map("input_text")
+  parsedItems String   @map("parsed_items")  // JSON: [{name, calories, protein_g, carbs_g, fat_g, amount_g}]
+  totalCals   Int      @map("total_calories")
+  macros      String                          // JSON: {protein_g, carbs_g, fat_g}
+  feedback    String
+  mealSlot    String?  @map("meal_slot")     // breakfast / lunch / dinner / snack
+  language    String   @default("en")
+  loggedAt    DateTime @default(now()) @map("logged_at")
+
+  @@map("meal_tracking")
+}
+
+model MedicineReminder {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String                    // "Metformin"
+  dose      String                    // "500mg"
+  times     String                    // JSON: ["08:30", "20:30"]
+  withFood  Boolean  @map("with_food") @default(false)
+  notes     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("medicine_reminders")
 }

@@ -3,8 +3,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_current_user
 from app.db import prisma
-from app.schemas import FoodSearchResponse, SafeFoodsResponse, FoodDetailResponse
+from app.schemas import FoodSearchResponse, SafeFoodsResponse, FoodDetailResponse, FoodWithInsightResponse
 from app.utils import safe_list
+from app.core.llm_client import llm_client
 from graph_rag_bridge import KhadokGraphRAG
 from typing import List
 
@@ -111,3 +112,82 @@ async def get_food_detail(code: str, current_user=Depends(get_current_user)):
         fiber=food.get("fiber"),
         rules=rules,
     )
+
+
+INSIGHT_SYSTEM_PROMPT = """You are an AI nutritionist. For each food item, provide a 1-line personalized nutritional insight based on the user's conditions and goal.
+Return ONLY valid JSON in this exact structure:
+{
+  "insights": [
+    {
+      "code": "02_0001",
+      "safety": "safe",  // "safe", "caution", or "avoid"
+      "ai_insight": "Great protein source for your diabetes, but keep portions moderate for weight loss."
+    }
+  ]
+}"""
+
+
+@router.get("/search-with-insight", response_model=List[FoodWithInsightResponse])
+async def search_foods_with_insight(q: str, slot: str = "any", current_user=Depends(get_current_user)):
+    """Search foods with AI personalized insights for the current user."""
+    profile = await prisma.profile.find_unique(where={"userId": current_user.id})
+    conditions = safe_list(profile.medicalConditions) if profile else []
+    goal = profile.goal if profile else "maintain"
+
+    rag = _get_rag()
+    results = rag.search_food(q)[:10]  # Limit to 10 to avoid huge LLM prompts
+
+    if not results:
+        return []
+
+    foods_context = []
+    for r in results:
+        foods_context.append(
+            f"- [{r['code']}] {r['name_en']} ({r.get('calories', '?')} kcal, {r.get('protein', '?')}g protein)"
+        )
+    
+    context = (
+        f"User conditions: {', '.join(conditions) or 'None'}. Goal: {goal}. Meal slot: {slot}.\n"
+        f"Foods found:\n" + "\n".join(foods_context)
+    )
+
+    messages = [
+        {"role": "system", "content": INSIGHT_SYSTEM_PROMPT},
+        {"role": "user", "content": context},
+    ]
+
+    raw = await llm_client.chat_completion(
+        messages=messages,
+        temperature=0.3,
+        max_tokens=1024,
+        response_format={"type": "json_object"},
+    )
+
+    insights_map = {}
+    try:
+        data = __import__('json').loads(raw)
+        for item in data.get("insights", []):
+            insights_map[item["code"]] = item
+    except Exception:
+        pass
+
+    response = []
+    for r in results:
+        insight = insights_map.get(r["code"], {})
+        response.append(
+            FoodWithInsightResponse(
+                code=r["code"],
+                name_en=r["name_en"],
+                name_bn=r["name_bn"],
+                calories=r.get("calories"),
+                protein=r.get("protein"),
+                fiber=r.get("fiber"),
+                fat=r.get("fat"),
+                carbs=r.get("carbs"),
+                food_group=r["food_group"],
+                safety=insight.get("safety", "safe"),
+                ai_insight=insight.get("ai_insight", "Good nutritional choice."),
+            )
+        )
+    return response
+

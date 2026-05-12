@@ -4,7 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import lifespan
-from app.routers import auth, profile, health_log, meal_plan, chat, foods, report
+from app.routers import (
+    auth, profile, health_log, meal_plan, chat, foods, report,
+    meal_tracking, medicine, meal_builder
+)
 
 app = FastAPI(
     title=settings.app_name,
@@ -30,6 +33,9 @@ app.include_router(meal_plan.router, prefix="/meal-plans", tags=["Meal Plan"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(foods.router, prefix="/foods", tags=["Foods"])
 app.include_router(report.router, prefix="/reports", tags=["Reports"])
+app.include_router(meal_tracking.router, prefix="/meal-tracking", tags=["Meal Tracking"])
+app.include_router(medicine.router, prefix="/medicine-reminders", tags=["Medicine"])
+app.include_router(meal_builder.router, prefix="/meal-builder", tags=["Meal Builder"])
 
 
 @app.get("/health", tags=["Health"])

@@ -1,4 +1,4 @@
-"""Meal plan generation service — GraphRAG + Calorie Engine + Grok LLM."""
+"""Meal plan generation service — GraphRAG + Calorie Engine + Groq LLM (Llama 3.3)."""
 
 import json
 import random
@@ -30,16 +30,13 @@ def _build_meal_plan_prompt(
 ) -> List[Dict[str, str]]:
     """Build the LLM prompt for meal plan generation."""
 
-    # Get applicable dietary rules
     applicable_rules = [r for r in NDG_DIETARY_RULES if r["condition"] in conditions]
 
-    # Format safe foods for the prompt
     foods_text = "\n".join([
         f"- {f['name_bn']} ({f['name_en']}): {f.get('calories', 'N/A')} kcal, {f.get('protein', 'N/A')}g protein, group: {f['food_group']}"
         for f in safe_foods[:30]
     ])
 
-    # Format rules
     rules_text = "\n".join([
         f"- [{r['rule_type']}] {r['group_target']}: {r['reason_en']}"
         for r in applicable_rules[:20]
@@ -50,14 +47,26 @@ def _build_meal_plan_prompt(
     system_prompt = """You are Khadok-Bangla AI, a warm and knowledgeable Bangladeshi nutrition companion.
 Your task is to generate a personalized daily meal plan using ONLY the provided safe foods.
 
-RULES:
+CRITICAL RULES:
 1. Use ONLY foods from the safe foods list.
 2. Respect all dietary rules (AVOID, PREFER, LIMIT).
 3. Match the calorie target and macro distribution.
 4. Use authentic Bangladeshi food names in Bengali first, then English in brackets.
 5. Explain WHY each food is recommended for this specific user.
-6. Return your response as a valid JSON object matching the requested format.
+6. Return ONLY a valid JSON object — no markdown, no extra text outside JSON.
+7. All numeric values must be integers where specified.
+8. Every meal must have at least one item.
 """
+
+    # Enrich prompt with dietary context from GraphRAG
+    dietary_context = ""
+    for condition in conditions:
+        rules_for_condition = [r for r in applicable_rules if r["condition"] == condition]
+        if rules_for_condition:
+            dietary_context += f"\n{condition} Rules:\n"
+            for r in rules_for_condition[:5]:
+                action = "AVOID" if r["rule_type"] == "AVOID" else "PREFER"
+                dietary_context += f"  - {action} {r['group_target']}: {r['reason_en']}\n"
 
     user_prompt = f"""{lang_instruction}
 
@@ -78,6 +87,9 @@ DAILY NUTRITION TARGETS (NDG 2025):
 DIETARY RULES:
 {rules_text}
 
+DETAILED CONTEXT:
+{dietary_context}
+
 SAFE FOODS (use only these):
 {foods_text}
 
@@ -88,9 +100,9 @@ MEAL DISTRIBUTION:
 - Evening Snack (বিকেলের নাস্তা): 10%
 - Dinner (রাতের খাবার): 25%
 
-TASK: Generate a complete daily meal plan in JSON format.
+TASK: Generate a complete daily meal plan in JSON format. Do not include any text outside the JSON object.
 
-RESPONSE FORMAT (strict JSON):
+RESPONSE FORMAT (strict JSON, follow exactly):
 {{
   "target_calories": {targets['target_calories']},
   "macros": {{"protein_g": {targets['protein_g']}, "carbs_g": {targets['carbs_g']}, "fat_g": {targets['fat_g']}, "fiber_g": {targets.get('fiber_g', 25)}}},
@@ -129,23 +141,32 @@ def _generate_fallback_meal_plan(
     safe_foods: List[Dict[str, Any]],
     conditions: List[str],
     language: str = "bn",
+    used_codes_global: set = None,
 ) -> Dict[str, Any]:
     """Generate a template-based meal plan when LLM is unavailable."""
 
-    # Group foods by category for balanced meal construction
+    if used_codes_global is None:
+        used_codes_global = set()
+
     categories = {}
     for f in safe_foods:
         cat = f.get("food_group", "Other")
         categories.setdefault(cat, []).append(f)
 
-    # Helper to pick a food from a category
     def pick(cat, used):
-        pool = [f for f in categories.get(cat, []) if f["code"] not in used]
+        pool = [f for f in categories.get(cat, []) if f["code"] not in used and f["code"] not in used_codes_global]
         if pool:
-            return random.choice(pool)
-        # Fallback: any unused safe food
-        pool = [f for f in safe_foods if f["code"] not in used]
-        return random.choice(pool) if pool else safe_foods[0]
+            chosen = random.choice(pool)
+            used.add(chosen["code"])
+            used_codes_global.add(chosen["code"])
+            return chosen
+        pool = [f for f in safe_foods if f["code"] not in used and f["code"] not in used_codes_global]
+        if pool:
+            chosen = random.choice(pool)
+            used.add(chosen["code"])
+            used_codes_global.add(chosen["code"])
+            return chosen
+        return safe_foods[0]
 
     used_codes = set()
 
@@ -154,9 +175,7 @@ def _generate_fallback_meal_plan(
         items = []
         meal_cals = 0
 
-        # Each meal: 1 grain/starch + 1 protein + 1 vegetable/fruit
         grain = pick("Cereals & Grains", used_codes)
-        used_codes.add(grain["code"])
         items.append({
             "food_code": grain["code"],
             "name_bn": grain["name_bn"],
@@ -173,7 +192,6 @@ def _generate_fallback_meal_plan(
         if not protein:
             protein = pick("Eggs", used_codes)
         if protein:
-            used_codes.add(protein["code"])
             items.append({
                 "food_code": protein["code"],
                 "name_bn": protein["name_bn"],
@@ -190,7 +208,6 @@ def _generate_fallback_meal_plan(
         if not veg:
             veg = pick("Fruits", used_codes)
         if veg:
-            used_codes.add(veg["code"])
             items.append({
                 "food_code": veg["code"],
                 "name_bn": veg["name_bn"],
@@ -247,8 +264,7 @@ def _generate_fallback_meal_plan(
 
 
 async def generate_daily_meal_plan(user_id: str, language: str = "bn") -> Dict[str, Any]:
-    """Generate a daily meal plan for a user."""
-    # Load profile
+    """Generate a daily meal plan for a user, using the most recent health log weight."""
     profile = await prisma.profile.find_unique(where={"userId": user_id})
     if not profile:
         raise ValueError("Profile not found")
@@ -256,23 +272,28 @@ async def generate_daily_meal_plan(user_id: str, language: str = "bn") -> Dict[s
     if not profile.weightKg or not profile.heightCm or not profile.gender or not profile.activityLevel:
         raise ValueError("Profile incomplete")
 
-    # Calculate targets
+    # Use the most recent health-log weight if available (more accurate than profile's initial weight)
+    current_weight = profile.weightKg
+    latest_log = await prisma.healthlog.find_first(
+        where={"userId": user_id},
+        order={"logDate": "desc"},
+    )
+    if latest_log and latest_log.weightKg:
+        current_weight = latest_log.weightKg
+
     targets = calculate_targets({
         "gender": profile.gender,
         "height_cm": profile.heightCm,
-        "weight_kg": profile.weightKg,
+        "weight_kg": current_weight,
         "activity_level": profile.activityLevel,
     })
 
-    # Get conditions and goal
     conditions = safe_list(profile.medicalConditions)
     goal = profile.goal or "Maintain"
 
-    # Query GraphRAG for safe foods
     rag = _get_rag()
     safe_foods = rag.get_safe_foods(conditions=conditions, goal=goal, limit=50)
 
-    # Try LLM first
     plan_data = None
     try:
         messages = _build_meal_plan_prompt(profile, targets, safe_foods, conditions, language)
@@ -284,10 +305,8 @@ async def generate_daily_meal_plan(user_id: str, language: str = "bn") -> Dict[s
         )
         plan_data = json.loads(llm_response)
     except Exception:
-        # LLM failed — use template fallback
         plan_data = _generate_fallback_meal_plan(profile, targets, safe_foods, conditions, language)
 
-    # Ensure required fields exist
     plan_data.setdefault("target_calories", targets["target_calories"])
     plan_data.setdefault("macros", {
         "protein_g": targets["protein_g"],
@@ -297,8 +316,45 @@ async def generate_daily_meal_plan(user_id: str, language: str = "bn") -> Dict[s
     })
     plan_data.setdefault("meals", [])
     plan_data.setdefault("condition_rules_applied", conditions)
+    # Annotate which weight was used for transparency
+    plan_data["_calculated_from_weight_kg"] = current_weight
 
     return plan_data
+
+
+async def generate_weekly_meal_plan(user_id: str, language: str = "bn") -> List[Dict[str, Any]]:
+    """Generate a 7-day meal plan efficiently."""
+    profile = await prisma.profile.find_unique(where={"userId": user_id})
+    if not profile:
+        raise ValueError("Profile not found")
+
+    if not profile.weightKg or not profile.heightCm or not profile.gender or not profile.activityLevel:
+        raise ValueError("Profile incomplete")
+
+    targets = calculate_targets({
+        "gender": profile.gender,
+        "height_cm": profile.heightCm,
+        "weight_kg": profile.weightKg,
+        "activity_level": profile.activityLevel,
+    })
+
+    conditions = safe_list(profile.medicalConditions)
+    goal = profile.goal or "Maintain"
+
+    rag = _get_rag()
+    safe_foods = rag.get_safe_foods(conditions=conditions, goal=goal, limit=50)
+
+    # Generate 7 unique daily plans using fallback (fast, no LLM calls)
+    used_codes_global = set()
+    weekly_plans = []
+    for day in range(7):
+        plan = _generate_fallback_meal_plan(profile, targets, safe_foods, conditions, language, used_codes_global)
+        plan["day"] = day + 1
+        plan["day_name_bn"] = ["সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার", "রবিবার"][day]
+        plan["day_name_en"] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][day]
+        weekly_plans.append(plan)
+
+    return weekly_plans
 
 
 async def save_meal_plan(user_id: str, plan_type: str, plan_data: Dict[str, Any], language: str) -> Any:

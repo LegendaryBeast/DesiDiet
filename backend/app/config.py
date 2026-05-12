@@ -29,10 +29,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
-    # LLM — xAI Grok
-    xai_api_key: str = Field(alias="XAI_API_KEY")
-    xai_base_url: str = Field(default="https://api.x.ai/v1", alias="XAI_BASE_URL")
-    xai_model: str = Field(default="grok-beta", alias="XAI_MODEL")
+    # LLM — Groq (OpenAI-compatible)
+    llm_api_key: str = Field(alias="LLM_API_KEY")
+    llm_base_url: str = Field(default="https://api.groq.com/openai/v1", alias="LLM_BASE_URL")
+    llm_model: str = Field(default="llama-3.3-70b-versatile", alias="LLM_MODEL")
 
     @property
     def cors_origin_list(self) -> List[str]:

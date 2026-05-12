@@ -3,8 +3,9 @@
 from fastapi import APIRouter, Depends
 from app.dependencies import get_current_user
 from app.db import prisma
-from app.schemas import NutritionReportResponse, ConditionsReportResponse
+from app.schemas import NutritionReportResponse, ConditionsReportResponse, SendEmailReportRequest, SendEmailReportResponse
 from app.utils import safe_list
+from app.core.llm_client import llm_client
 from graph_rag_bridge import calculate_targets, NDG_DIETARY_RULES
 from typing import List, Dict, Any
 
@@ -56,3 +57,54 @@ async def get_conditions_report(current_user=Depends(get_current_user)):
     rules = [r for r in NDG_DIETARY_RULES if r["condition"] in conditions]
 
     return ConditionsReportResponse(conditions=conditions, rules=rules)
+
+
+REPORT_SYSTEM_PROMPT = """You are an AI nutritionist. Write a single paragraph narrative summary of the user's weekly progress.
+You will be provided with their weekly calorie averages, macros, weight change, and adherence.
+Give them a clear, encouraging, and constructive summary.
+Return ONLY valid JSON:
+{
+  "report_summary": "This week you averaged 1,820kcal / day..."
+}"""
+
+
+@router.post("/send-email", response_model=SendEmailReportResponse)
+async def send_email_report(req: SendEmailReportRequest, current_user=Depends(get_current_user)):
+    """Generate an AI summary and send the weekly report via email."""
+    # Here we would normally aggregate the past week's data. 
+    # Simulated context for AI summarization:
+    context = "User has averaged 1800kcal this week. Protein 75g. Weight stable. Goal: weight loss. Adherence: 85%."
+    
+    messages = [
+        {"role": "system", "content": REPORT_SYSTEM_PROMPT},
+        {"role": "user", "content": context},
+    ]
+
+    raw = await llm_client.chat_completion(
+        messages=messages,
+        temperature=0.4,
+        max_tokens=512,
+        response_format={"type": "json_object"},
+    )
+    
+    try:
+        data = __import__('json').loads(raw)
+        report_summary = data.get("report_summary", "Here is your weekly report.")
+    except Exception:
+        report_summary = "Here is your weekly report."
+        
+    # TODO: Actual Resend API integration
+    # import resend
+    # resend.api_key = settings.resend_api_key
+    # resend.Emails.send({
+    #     "from": "PushtiAI <reports@pushtiai.com>",
+    #     "to": req.email,
+    #     "subject": "Your Weekly PushtiAI Report",
+    #     "html": f"<p>{report_summary}</p>"
+    # })
+    
+    return SendEmailReportResponse(
+        message="Email dispatched successfully (simulated).",
+        email=req.email,
+        report_summary=report_summary
+    )

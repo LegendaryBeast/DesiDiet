@@ -1,4 +1,4 @@
-"""Async LLM client for xAI Grok (OpenAI-compatible API)."""
+"""Async LLM client for Groq (OpenAI-compatible API)."""
 
 from typing import AsyncIterator, List, Dict, Any, Optional
 from openai import AsyncOpenAI
@@ -6,14 +6,14 @@ from app.config import settings
 
 
 class LLMClient:
-    """Unified async LLM client. Swapping providers is a one-line config change."""
+    """Unified async LLM client. Uses Groq via OpenAI-compatible API."""
 
     def __init__(self):
         self.client = AsyncOpenAI(
-            api_key=settings.xai_api_key,
-            base_url=settings.xai_base_url,
+            api_key=settings.llm_api_key,
+            base_url=settings.llm_base_url,
         )
-        self.model = settings.xai_model
+        self.model = settings.llm_model
 
     async def chat_completion(
         self,
