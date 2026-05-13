@@ -10,6 +10,7 @@ import { AuthPage } from './pages/AuthPage';
 import { MedicinePage } from './pages/MedicinePage';
 import { FoodsPage } from './pages/FoodsPage';
 import { ReportPage } from './pages/ReportPage';
+import { Conditions } from './pages/Conditions';
 import { Nav } from './components/layout/Nav';
 import { Footer } from './components/layout/Footer';
 import { PageLoader } from './components/ui/PageLoader';
@@ -63,6 +64,7 @@ function AppRoutes() {
               {/* Public routes */}
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
+              <Route path="/conditions" element={<Conditions />} />
               <Route path="/auth" element={<AuthPage />} />
 
               {/* Protected routes */}

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
-import { mealPlanApi, type MealPlanResponse } from '../lib/api';
+import { mealPlanApi, type MealPlanResponse, foodsApi, type FoodSearchResponse } from '../lib/api';
 
 const SLOT_ICONS: Record<string, React.ElementType> = {
   breakfast: Coffee,
@@ -52,6 +52,8 @@ interface MealItem {
   amount?: string;
   calories?: number;
   protein_g?: number;
+  why_bn?: string;
+  food_group?: string;
 }
 
 interface MealSlot {
@@ -84,8 +86,9 @@ export const MealPlan = () => {
   const [savingEdit, setSavingEdit] = useState(false);
   
   const [addingFoodToSlot, setAddingFoodToSlot] = useState<number | null>(null);
-  const [newFoodName, setNewFoodName] = useState('');
-  const [newFoodCal, setNewFoodCal] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FoodSearchResponse[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const targets = profileData?.targets;
 
@@ -137,6 +140,26 @@ export const MealPlan = () => {
     else if (tab === 'weekly') fetchWeekly();
     else fetchHistory();
   }, [tab, fetchDaily, fetchWeekly, fetchHistory]);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await foodsApi.search(searchQuery);
+        setSearchResults(results);
+      } catch (e) {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const toggleSlot = async (slot: string) => {
     if (!plan) return;
@@ -200,21 +223,7 @@ export const MealPlan = () => {
     setEditingPlanData({ ...editingPlanData, meals: newMeals });
   };
 
-  const addFoodItem = (slotIndex: number) => {
-    if (!newFoodName || !newFoodCal || !editingPlanData || !editingPlanData.meals) return;
-    const newMeals = [...editingPlanData.meals];
-    const newItems = [...(newMeals[slotIndex].items || [])];
-    newItems.push({
-      name_bn: newFoodName,
-      calories: parseInt(newFoodCal) || 0,
-      amount: "1 serving"
-    });
-    newMeals[slotIndex] = { ...newMeals[slotIndex], items: newItems };
-    setEditingPlanData({ ...editingPlanData, meals: newMeals });
-    setAddingFoodToSlot(null);
-    setNewFoodName('');
-    setNewFoodCal('');
-  };
+
 
   const renderMealCard = (p: MealPlanResponse, showToggle = false) => {
     const isToday = showToggle;
@@ -222,7 +231,7 @@ export const MealPlan = () => {
     const meals = pd.meals || [];
     const consumedCal = meals
       .filter((m) => completedSlots.includes(m.slot))
-      .reduce((acc, m) => acc + (m.target_calories || 0), 0);
+      .reduce((acc, m) => acc + (m.items || []).reduce((s, item) => s + (item.calories || 0), 0), 0);
     
     // Total calculation
     let totalCal = p.calorie_target || pd.target_calories || 0;
@@ -260,7 +269,10 @@ export const MealPlan = () => {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <span className="font-display text-3xl font-black text-ink leading-none">{pct}%</span>
-              <span className="font-bn text-[0.6rem] text-ink-muted mt-1 uppercase tracking-wider font-bold">গৃহীত</span>
+              <div className="font-bn text-[0.65rem] text-ink-muted mt-1 leading-tight font-bold">
+                <span className="text-accent">{consumedCal}</span> / {totalCal} <br />
+                <span className="uppercase tracking-wider">kcal গৃহীত</span>
+              </div>
             </div>
           </div>
 
@@ -347,7 +359,7 @@ export const MealPlan = () => {
                     <div className="mt-0 lg:mt-4">
                       <div className="font-bn text-base font-bold text-ink">{slot.slot_bn || slot.slot}</div>
                       <div className="font-body text-[0.6rem] uppercase tracking-widest text-ink-faint font-bold">
-                        {slot.target_calories} kcal
+                        {(slot.items || []).reduce((sum, item) => sum + (item.calories || 0), 0)} kcal
                       </div>
                     </div>
                     {showToggle && (
@@ -369,13 +381,16 @@ export const MealPlan = () => {
                     {(slot.items || []).map((food, j) => (
                       <div
                         key={j}
-                        className="flex items-center justify-between p-4 bg-cream/30 rounded-2xl hover:bg-cream/60 transition-colors border border-transparent hover:border-ink/5 relative group/item"
+                        className="flex items-start justify-between p-4 bg-cream/30 rounded-2xl hover:bg-cream/60 transition-colors border border-transparent hover:border-ink/5 relative group/item"
                       >
-                        <div>
+                        <div className="flex-1 pr-3">
                           <div className="font-bn text-ink font-bold text-sm">{food.name_bn || food.name_en}</div>
-                          {food.amount && <div className="font-bn text-[0.7rem] text-ink-faint">{food.amount}</div>}
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            {food.amount && <div className="font-bn text-[0.7rem] text-ink-faint">{food.amount}</div>}
+                          </div>
+
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <div className="font-bold text-ink-muted text-xs bg-white px-2 py-1 rounded-lg border border-ink/5 whitespace-nowrap">
                             {food.calories || '?'} cal
                           </div>
@@ -394,43 +409,77 @@ export const MealPlan = () => {
                     
                     {isEditing && (
                       addingFoodToSlot === i ? (
-                        <div className="col-span-1 md:col-span-2 flex flex-col sm:flex-row items-center gap-2 p-3 bg-accent/5 border border-accent/20 rounded-2xl">
-                          <input
-                            type="text"
-                            placeholder="খাবারের নাম..."
-                            value={newFoodName}
-                            onChange={(e) => setNewFoodName(e.target.value)}
-                            className="flex-1 w-full bg-white px-3 py-2 rounded-xl border border-ink/10 text-sm font-bn outline-none focus:border-accent/50"
-                          />
-                          <input
-                            type="number"
-                            placeholder="ক্যালরি"
-                            value={newFoodCal}
-                            onChange={(e) => setNewFoodCal(e.target.value)}
-                            className="w-full sm:w-24 bg-white px-3 py-2 rounded-xl border border-ink/10 text-sm font-bn outline-none focus:border-accent/50"
-                          />
-                          <div className="flex w-full sm:w-auto gap-2">
+                        <div className="col-span-1 md:col-span-2 flex flex-col items-start gap-2 p-3 bg-accent/5 border border-accent/20 rounded-2xl">
+                          <div className="flex w-full gap-2">
+                            <input
+                              type="text"
+                              placeholder="খাবারের নাম খুঁজুন..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="flex-1 w-full bg-white px-3 py-2 rounded-xl border border-ink/10 text-sm font-bn outline-none focus:border-accent/50"
+                              autoFocus
+                            />
                             <button
-                              onClick={() => setAddingFoodToSlot(null)}
-                              className="flex-1 sm:flex-none p-2 text-ink-muted hover:bg-ink/5 rounded-xl transition-colors flex justify-center items-center"
+                              onClick={() => { setAddingFoodToSlot(null); setSearchQuery(''); setSearchResults([]); }}
+                              className="p-2 text-ink-muted hover:bg-ink/5 rounded-xl transition-colors flex justify-center items-center"
                             >
                               <X className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => addFoodItem(i)}
-                              disabled={!newFoodName || !newFoodCal}
-                              className="flex-1 sm:flex-none p-2 bg-accent text-white hover:bg-accent/90 rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
                           </div>
+                          
+                          {searchLoading && (
+                            <div className="text-xs text-ink-muted px-2 py-1 font-bn flex items-center gap-2">
+                              <Loader2 className="w-3 h-3 animate-spin" /> খুঁজছে...
+                            </div>
+                          )}
+                          
+                          {searchResults.length > 0 && (
+                            <div className="flex flex-col gap-1 w-full max-h-48 overflow-y-auto mt-1">
+                              {searchResults.map((res) => (
+                                <button
+                                  key={res.code}
+                                  onClick={() => {
+                                    if (!editingPlanData || !editingPlanData.meals) return;
+                                    const newMeals = [...editingPlanData.meals];
+                                    const newItems = [...(newMeals[i].items || [])];
+                                    newItems.push({
+                                      name_bn: res.name_bn,
+                                      name_en: res.name_en,
+                                      calories: res.calories || 0,
+                                      amount: "100g",
+                                      food_group: res.food_group
+                                    });
+                                    newMeals[i] = { ...newMeals[i], items: newItems };
+                                    setEditingPlanData({ ...editingPlanData, meals: newMeals });
+                                    setAddingFoodToSlot(null);
+                                    setSearchQuery('');
+                                    setSearchResults([]);
+                                  }}
+                                  className="text-left w-full p-3 bg-white hover:bg-cream rounded-xl text-sm font-bn border border-ink/5 flex justify-between items-center transition-colors"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-ink">{res.name_bn || res.name_en}</span>
+                                    <span className="text-[0.65rem] text-ink-faint">{res.food_group}</span>
+                                  </div>
+                                  <span className="text-xs font-bold text-accent shrink-0">
+                                    {res.calories || '?'} cal
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {searchQuery && !searchLoading && searchResults.length === 0 && (
+                            <div className="text-xs text-red-400 px-2 py-1 font-bn">
+                              কোনো খাবার পাওয়া যায়নি
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <button
                           onClick={() => {
                             setAddingFoodToSlot(i);
-                            setNewFoodName('');
-                            setNewFoodCal('');
+                            setSearchQuery('');
+                            setSearchResults([]);
                           }}
                           className="flex items-center justify-center gap-2 p-4 border border-dashed border-ink/20 rounded-2xl hover:border-accent hover:text-accent hover:bg-accent/5 transition-all text-ink-muted text-sm font-bn font-bold h-full min-h-[4rem]"
                         >

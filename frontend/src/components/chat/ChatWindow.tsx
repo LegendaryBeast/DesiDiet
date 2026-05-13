@@ -11,6 +11,7 @@ import {
   History,
   Bot,
   WifiOff,
+  User,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -122,10 +123,13 @@ export const ChatWindow = () => {
     abortRef.current = abort;
   }, [input, isStreaming, isLoggedIn, i18n.language, messages]);
 
+  const { user } = useAuth();
   const profile = profileData?.profile;
-  const displayName = i18n.language === 'bn'
-    ? (profile?.name_bn || 'ব্যবহারকারী')
-    : (profile?.name_en || 'User');
+  const isBn = i18n.language === 'bn';
+  
+  const displayName = isBn
+    ? (profile?.name_bn || profile?.name_en || user?.email?.split('@')[0] || user?.phone || 'ব্যবহারকারী')
+    : (profile?.name_en || profile?.name_bn || user?.email?.split('@')[0] || user?.phone || 'User');
 
   return (
     <DashboardLayout
@@ -150,7 +154,7 @@ export const ChatWindow = () => {
         </button>
       )}
     >
-      <div className="flex-1 flex flex-col relative max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex flex-col relative max-w-6xl mx-auto w-full min-h-0">
         {/* Soft Background Glows */}
         <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[300px] md:w-[800px] h-[300px] md:h-[600px] bg-accent/5 blur-[80px] md:blur-[120px] rounded-full pointer-events-none" />
 
@@ -167,7 +171,7 @@ export const ChatWindow = () => {
         )}
 
         {/* Conversation Stream */}
-        <div className="flex-1 overflow-y-auto p-4 pb-12 md:p-8 md:pb-24 space-y-6 md:space-y-10 hide-scrollbar scroll-smooth relative z-10">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 pb-12 md:p-8 md:pb-24 space-y-6 md:space-y-10 scroll-smooth relative z-10">
           <AnimatePresence initial={false}>
             {messages.length === 0 ? (
               <motion.div
@@ -189,7 +193,7 @@ export const ChatWindow = () => {
                   <h4 className="text-ink-muted font-bn text-sm md:text-xl opacity-60">
                     {t('chat.greeting_user', { name: displayName })}
                   </h4>
-                  <h3 className="font-display text-2xl md:text-6xl font-black text-ink tracking-tight leading-tight">
+                  <h3 className="font-display text-2xl md:text-4xl lg:text-5xl font-black text-ink tracking-tight leading-tight">
                     {t('chat.how_can_i_help')}
                   </h3>
                   <p className="font-bn text-[0.75rem] md:text-base text-ink-faint max-w-md mx-auto">
@@ -198,7 +202,7 @@ export const ChatWindow = () => {
                 </div>
 
                 {/* Suggestion Cards */}
-                <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 md:gap-6 w-full max-w-4xl px-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 w-full max-w-4xl px-2">
                   {[
                     { icon: Layout, title: t('chat.suggestions.title1'), sub: t('chat.suggestions.sub1'), label: 'Meal Plan' },
                     { icon: Activity, title: t('chat.suggestions.title2'), sub: t('chat.suggestions.sub2'), label: 'Health Status' },
@@ -208,16 +212,16 @@ export const ChatWindow = () => {
                       key={i}
                       onClick={() => send(btn.title)}
                       disabled={isStreaming}
-                      className="p-2 md:p-8 bg-white border border-ink/5 rounded-2xl md:rounded-[2.5rem] text-center sm:text-left hover:border-accent/20 hover:shadow-2xl transition-all group shadow-sm disabled:opacity-50 flex flex-col items-center sm:items-start gap-1 sm:gap-0"
+                      className="p-4 md:p-8 bg-white border border-ink/5 rounded-2xl md:rounded-[2.5rem] text-center sm:text-left hover:border-accent/20 hover:shadow-2xl transition-all group shadow-sm disabled:opacity-50 flex flex-row sm:flex-col items-center sm:items-start gap-4 sm:gap-0"
                     >
-                      <div className="w-8 h-8 md:w-12 md:h-12 bg-cream rounded-lg md:rounded-2xl flex items-center justify-center text-ink group-hover:bg-accent group-hover:text-cream transition-colors sm:mb-6 shrink-0">
-                        <btn.icon size={16} className="md:w-5 md:h-5" />
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-cream rounded-xl md:rounded-2xl flex items-center justify-center text-ink group-hover:bg-accent group-hover:text-cream transition-colors shrink-0 sm:mb-6">
+                        <btn.icon size={18} className="md:w-5 md:h-5" />
                       </div>
-                      <div className="flex-1">
-                        <div className="font-bn font-bold text-xs md:text-xl text-ink mb-1 md:mb-2">{btn.title}</div>
-                        <div className="font-bn text-[0.6rem] text-ink-muted opacity-60 hidden sm:block mb-4">{btn.sub}</div>
+                      <div className="flex-1 text-left">
+                        <div className="font-bn font-bold text-sm md:text-xl text-ink mb-0.5 md:mb-2">{btn.title}</div>
+                        <div className="font-bn text-xs text-ink-muted opacity-60">{btn.sub}</div>
                       </div>
-                      <div className="hidden sm:block text-[0.6rem] uppercase tracking-widest text-ink-faint font-body font-bold border-t border-ink/5 pt-4 w-full">
+                      <div className="hidden sm:block text-[0.6rem] uppercase tracking-widest text-ink-faint font-body font-bold border-t border-ink/5 pt-4 w-full mt-4">
                         {btn.label}
                       </div>
                     </button>
@@ -242,7 +246,7 @@ export const ChatWindow = () => {
                       <Bot size={16} className="md:w-6 md:h-6" />
                     </motion.div>
                   )}
-                  <div className={`relative p-5 md:p-7 lg:p-9 rounded-[1.8rem] md:rounded-[2.8rem] font-bn leading-relaxed text-base md:text-xl max-w-[90%] md:max-w-[80%] lg:max-w-[70%] shadow-2xl transition-all duration-300 ${
+                  <div className={`relative p-4 md:p-7 lg:p-9 rounded-[1.5rem] md:rounded-[2.8rem] font-bn leading-relaxed text-sm md:text-lg max-w-[92%] md:max-w-[80%] lg:max-w-[70%] shadow-lg transition-all duration-300 ${
                     msg.type === 'user'
                       ? 'bg-ink text-cream rounded-br-none shadow-ink/30'
                       : 'bg-white border border-ink/5 text-ink rounded-tl-none ring-1 ring-ink/5'
@@ -260,7 +264,7 @@ export const ChatWindow = () => {
                     {msg.type === 'ai' && isStreaming && msg.text !== '' && (
                       <span className="inline-block w-0.5 h-5 bg-accent ml-1 animate-pulse" />
                     )}
-                    <div className={`text-[0.6rem] md:text-[0.7rem] mt-3 md:mt-5 font-body font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`text-[0.6rem] md:text-[0.65rem] mt-2 md:mt-4 font-body font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.type === 'ai' && <div className="w-1 h-1 bg-accent rounded-full animate-ping" />}
                       {msg.time}
                     </div>

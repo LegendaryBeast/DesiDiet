@@ -119,7 +119,9 @@ export const FoodsPage = () => {
                 <SafetyIcon className="w-3 h-3" /> {safety.label}
               </span>
             </div>
-            <div className="text-xs text-ink-faint font-body">{food.name_en} · {food.food_group}</div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-xs text-ink-faint font-body">{food.name_en}</span>
+            </div>
           </div>
 
           <div className="text-right flex-shrink-0">

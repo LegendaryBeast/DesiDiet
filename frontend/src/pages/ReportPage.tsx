@@ -132,9 +132,9 @@ export const ReportPage = () => {
             {/* BMI and Body Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label: 'BMI', val: targets.bmi.toFixed(1), sub: targets.bmi_category, color: 'bg-white border-ink/5' },
-                { label: 'আদর্শ ওজন', val: `${targets.ideal_body_weight_kg.toFixed(1)} kg`, sub: 'Ideal Body Weight', color: 'bg-white border-ink/5' },
-                { label: 'পানির লক্ষ্য', val: `${targets.water_l} L`, sub: 'Daily Water Intake', color: 'bg-white border-ink/5' },
+                { label: 'BMI', val: targets.bmi != null ? targets.bmi.toFixed(1) : '--', sub: targets.bmi_category || '---', color: 'bg-white border-ink/5' },
+                { label: 'আদর্শ ওজন', val: targets.ideal_body_weight_kg != null ? `${targets.ideal_body_weight_kg.toFixed(1)} kg` : '--', sub: 'Ideal Body Weight', color: 'bg-white border-ink/5' },
+                { label: 'পানির লক্ষ্য', val: targets.water_l != null ? `${Number(targets.water_l).toFixed(1)} L` : '--', sub: 'Daily Water Intake', color: 'bg-white border-ink/5' },
               ].map((item, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                   className={`p-6 rounded-[1.5rem] border shadow-sm ${item.color}`}

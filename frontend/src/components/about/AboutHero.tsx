@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const AboutHero = () => {
+  const { t } = useTranslation();
   return (
     <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden bg-ink">
       {/* Background Image with Parallax-like effect */}
@@ -27,15 +29,14 @@ export const AboutHero = () => {
           transition={{ delay: 0.5, duration: 1 }}
         >
           <h1 className="font-display text-[clamp(3rem,12vw,10rem)] font-black leading-[0.85] tracking-tight text-cream uppercase mb-8">
-            The Science <br />
-            <span className="italic text-accent-light">of Nutrition</span>
+            {t('about_hero.title_1')} <br />
+            <span className="italic text-accent-light">{t('about_hero.title_2')}</span>
           </h1>
           
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 mt-12">
             <div className="w-px h-12 bg-accent hidden md:block" />
             <p className="font-bn text-lg md:text-xl text-cream/80 max-w-lg leading-relaxed">
-              বাংলাদেশের মাটির পুষ্টি আর আধুনিক বিজ্ঞানের মেলবন্ধনে তৈরি—দেশিডায়েট এআই। 
-              আমরা শুধু ক্যালোরি গুনি না, আমরা সুস্বাস্থ্যের গল্প বুনি।
+              {t('about_hero.desc')}
             </p>
           </div>
         </motion.div>
@@ -47,7 +48,7 @@ export const AboutHero = () => {
         transition={{ duration: 2, repeat: Infinity }}
         className="absolute bottom-12 left-1/2 -translate-x-1/2 text-cream/40 flex flex-col items-center gap-2"
       >
-        <span className="text-[0.6rem] uppercase tracking-[0.3em] font-body">Scroll to Explore</span>
+        <span className="text-[0.6rem] uppercase tracking-[0.3em] font-body">{t('about_hero.scroll')}</span>
         <div className="w-px h-12 bg-cream/20" />
       </motion.div>
     </section>

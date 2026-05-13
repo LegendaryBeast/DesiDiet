@@ -121,9 +121,18 @@ async def search_foods_with_insight(q: str, slot: str = "any", current_user=Depe
     except Exception:
         pass
 
+    safe_foods_results = rag.get_safe_foods(conditions=conditions, goal=goal, limit=200)
+    safe_codes = {f["code"] for f in safe_foods_results}
+
     response = []
     for r in results:
         insight = insights_map.get(r["code"], {})
+        safety_val = insight.get("safety", "safe")
+        
+        # Enforce consistency: if GraphRAG deemed it safe, override LLM caution
+        if r["code"] in safe_codes and safety_val in ["caution", "avoid"]:
+            safety_val = "safe"
+
         response.append(
             FoodWithInsightResponse(
                 code=r["code"],
@@ -135,7 +144,7 @@ async def search_foods_with_insight(q: str, slot: str = "any", current_user=Depe
                 fat=r.get("fat"),
                 carbs=r.get("carbs"),
                 food_group=r["food_group"],
-                safety=insight.get("safety", "safe"),
+                safety=safety_val,
                 ai_insight=insight.get("ai_insight", "Good nutritional choice."),
             )
         )

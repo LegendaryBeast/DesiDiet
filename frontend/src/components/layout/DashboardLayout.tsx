@@ -6,7 +6,6 @@ import {
   User,
   Layout,
   Activity,
-  FileText,
   Languages,
   LogOut,
   Menu,
@@ -17,6 +16,7 @@ import {
   Pill,
   Apple,
   BarChart2,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -45,20 +45,32 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const profile = profileData?.profile;
   const targets = profileData?.targets;
+  const isBn = i18n.language === 'bn';
 
-  const displayName = profile?.name_bn || profile?.name_en || 'অতিথি';
-  const bmi = targets?.bmi?.toFixed(1) ?? '--';
+  const displayName = isBn
+    ? (profile?.name_bn || profile?.name_en || 'অতিথি')
+    : (profile?.name_en || profile?.name_bn || 'Guest');
+
+  // Calculate BMI from profile data if targets.bmi is missing
+  const computedBmi = (() => {
+    if (targets?.bmi) return targets.bmi.toFixed(1);
+    const w = profile?.weight_kg;
+    const h = profile?.height_cm;
+    if (w && h) return (w / ((h / 100) * (h / 100))).toFixed(1);
+    return '--';
+  })();
+
   const calories = targets?.target_calories ?? '--';
-  const bmiCategory = targets?.bmi_category ?? '---';
+  const bmiCategory = targets?.bmi_category ?? (isBn ? '---' : '---');
 
   const navItems = [
-    { path: '/', label: 'হোমপেজ', icon: Home },
-    { path: '/chat', label: 'এআই অ্যাসিস্ট্যান্ট', icon: FileText },
-    { path: '/meal-plan', label: 'আজকের মিল প্ল্যান', icon: Layout },
-    { path: '/health-log', label: 'স্বাস্থ্য লগ', icon: Activity },
-    { path: '/medicine', label: 'ওষুধের রিমাইন্ডার', icon: Pill },
-    { path: '/foods', label: 'খাবারের তালিকা', icon: Apple },
-    { path: '/report', label: 'পুষ্টি রিপোর্ট', icon: BarChart2 },
+    { path: '/', label: isBn ? 'হোমপেজ' : 'Home', icon: Home },
+    { path: '/chat', label: isBn ? 'এআই অ্যাসিস্ট্যান্ট' : 'AI Assistant', icon: MessageSquare },
+    { path: '/meal-plan', label: isBn ? 'আজকের মিল প্ল্যান' : 'Meal Plan', icon: Layout },
+    { path: '/health-log', label: isBn ? 'স্বাস্থ্য লগ' : 'Health Log', icon: Activity },
+    { path: '/medicine', label: isBn ? 'ওষুধের রিমাইন্ডার' : 'Medicine', icon: Pill },
+    { path: '/foods', label: isBn ? 'খাবারের তালিকা' : 'Foods', icon: Apple },
+    { path: '/report', label: isBn ? 'পুষ্টি রিপোর্ট' : 'Report', icon: BarChart2 },
   ];
 
   const handleLogout = () => {
@@ -105,7 +117,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-2xl border border-ink/5 text-center">
                       <div className="text-[0.55rem] uppercase tracking-wider text-ink-faint font-body mb-1">BMI</div>
-                      <div className="font-bold text-base text-ink">{bmi}</div>
+                      <div className="font-bold text-base text-ink">{computedBmi}</div>
                     </div>
                     <div className="bg-white p-3 rounded-2xl border border-ink/5 text-center">
                       <div className="text-[0.55rem] uppercase tracking-wider text-ink-faint font-body mb-1">KCAL</div>
@@ -144,18 +156,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
                 <div className="pt-6 md:pt-8 mt-auto border-t border-ink/5 space-y-2">
                   <button
-                    onClick={() => i18n.changeLanguage(i18n.language === 'bn' ? 'en' : 'bn')}
+                    onClick={() => i18n.changeLanguage(isBn ? 'en' : 'bn')}
                     className="w-full flex items-center gap-4 p-3 md:p-4 rounded-2xl hover:bg-cream transition-colors text-ink-muted hover:text-ink font-bold text-sm"
                   >
                     <Languages size={18} />
-                    <span>{i18n.language === 'bn' ? 'English' : 'বাংলায়'}</span>
+                    <span>{isBn ? 'Switch to English' : 'বাংলায় যান'}</span>
                   </button>
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-4 p-3 md:p-4 rounded-2xl hover:bg-red-50 text-red-500 transition-colors font-bold text-sm"
                   >
                     <LogOut size={18} />
-                    <span>লগ আউট</span>
+                    <span>{isBn ? 'লগ আউট' : 'Log Out'}</span>
                   </button>
                 </div>
               </div>
@@ -204,7 +216,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </header>
 
         {/* Content Stream */}
-        <main className={`flex-1 relative z-10 hide-scrollbar scroll-smooth ${noPadding ? 'overflow-hidden flex flex-col' : 'overflow-y-auto p-4 md:p-8 lg:p-12'}`}>
+        <main className={`flex-1 relative z-10 scroll-smooth ${noPadding ? 'overflow-hidden flex flex-col' : 'overflow-y-auto p-4 md:p-8 lg:p-12'}`}>
           {children}
         </main>
       </div>

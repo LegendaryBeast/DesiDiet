@@ -235,17 +235,48 @@ export const HealthLog = () => {
               {/* Quick Stats */}
               <div className="lg:col-span-7 space-y-6">
                 <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-ink/5">
-                  <h3 className="font-bn text-lg font-bold text-ink mb-6">আপনার নির্দেশিকা</h3>
+                  <h3 className="font-bn text-lg font-bold text-ink mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-5 bg-accent rounded-full inline-block" />
+                    আপনার নির্দেশিকা
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { label: 'সাধারণ রক্তে শর্করা', val: '৪.০ - ৭.৮ mmol/L', color: 'bg-green-50 border-green-100 text-green-700' },
-                      { label: 'স্বাস্থ্যকর রক্তচাপ', val: '< ১২০/৮০ mmHg', color: 'bg-blue-50 border-blue-100 text-blue-700' },
-                      { label: 'HbA1c লক্ষ্যমাত্রা', val: '< ৭% (ডায়াবেটিস)', color: 'bg-amber-50 border-amber-100 text-amber-700' },
-                      { label: 'BMI লক্ষ্যমাত্রা', val: '১৮.৫ - ২৩.০ (দক্ষিণ এশিয়া)', color: 'bg-purple-50 border-purple-100 text-purple-700' },
+                      {
+                        label: 'সাধারণ রক্তে শর্করা',
+                        val: '৪.০ - ৭.৮ mmol/L',
+                        bg: 'bg-emerald-50',
+                        border: 'border-emerald-200',
+                        labelColor: 'text-emerald-600',
+                        valColor: 'text-emerald-800',
+                      },
+                      {
+                        label: 'স্বাস্থ্যকর রক্তচাপ',
+                        val: '< ১২০/৮০ mmHg',
+                        bg: 'bg-sky-50',
+                        border: 'border-sky-200',
+                        labelColor: 'text-sky-600',
+                        valColor: 'text-sky-800',
+                      },
+                      {
+                        label: 'HbA1c লক্ষ্যমাত্রা',
+                        val: '< ৭% (ডায়াবেটিস)',
+                        bg: 'bg-amber-50',
+                        border: 'border-amber-200',
+                        labelColor: 'text-amber-600',
+                        valColor: 'text-amber-900',
+                      },
+                      {
+                        label: 'BMI লক্ষ্যমাত্রা',
+                        val: '১৮.৫ - ২৩.০ (দক্ষিণ এশিয়া)',
+                        bg: 'bg-violet-50',
+                        border: 'border-violet-200',
+                        labelColor: 'text-violet-600',
+                        valColor: 'text-violet-900',
+                      },
                     ].map((item, i) => (
-                      <div key={i} className={`p-4 rounded-2xl border ${item.color}`}>
-                        <p className="text-xs font-bold uppercase tracking-wider mb-1 opacity-70">{item.label}</p>
-                        <p className="font-bold text-sm">{item.val}</p>
+                      <div key={i} className={`p-4 rounded-2xl border ${item.bg} ${item.border}`}>
+                        <p className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${item.labelColor}`}>{item.label}</p>
+                        <p className={`font-black text-base ${item.valColor}`}>{item.val}</p>
                       </div>
                     ))}
                   </div>
