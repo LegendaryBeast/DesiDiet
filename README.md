@@ -1,17 +1,24 @@
-# DesiDiet AI
+# DesiDiet AI: Personalized Nutrition at Scale 
 
-Personalized AI Nutrition Companion for Bangladeshi People. This system uses a GraphRAG architecture based on the National Dietary Guidelines for Bangladesh 2025.
+DesiDiet AI is an enterprise-grade nutritional ecosystem designed specifically for the Bangladeshi population. It leverages a modern **GraphRAG (Graph-based Retrieval-Augmented Generation)** architecture to deliver highly personalized dietary advice grounded in the **National Dietary Guidelines (NDG) Bangladesh 2025**.
 
-## AI-Native System Architecture
-DesiDiet AI is designed following the **Infinity AI Buildfest 2026 AI-Native Application Blueprint**. For a comprehensive breakdown of our 8-layer enterprise architecture, please see the [System Architecture Documentation](./docs/architecture.md).
+---
 
-## Installation & Setup
+## 🛠️ System Overview
 
-### Prerequisites
-* Python 3.9+
-* Docker (for running the Neo4j Graph Database)
+DesiDiet AI follows the **Infinity AI Buildfest 2026 AI-Native Application Blueprint**. It consists of three primary layers:
 
-### 1. Start Neo4j Database
+1.  **Data Layer:** Neo4j Knowledge Graph (370+ local foods & NDG rules) + Prisma SQL (User profiles & logs).
+2.  **Reasoning Layer (FastAPI):** Python-based GraphRAG engine that performs semantic retrieval and dietary constraint checking.
+3.  **Presentation Layer (React):** A premium, bilingual dashboard for real-time AI assistance and health tracking.
+
+For a comprehensive breakdown of our 8-layer enterprise architecture, please see the [System Architecture Documentation](./docs/architecture.md).
+
+---
+
+##  Quick Start
+
+### 1. Database (Neo4j)
 Run the Neo4j graph database locally using Docker:
 ```bash
 docker run -d --name neo4j-khadok \
@@ -20,68 +27,46 @@ docker run -d --name neo4j-khadok \
     neo4j:5.12
 ```
 
-### 2. Environment Setup
-Create a virtual environment and install the required Python packages:
+### 2. Backend & GraphRAG Engine
 ```bash
+cd graphRAG
 python3 -m venv venv
 source venv/bin/activate
-pip install -r graphRAG/requirements.txt
-```
+pip install -r requirements.txt
 
-Ensure your `.env` file (now located inside the `graphRAG/` folder) matches your Neo4j setup:
-```env
-NEO4J_MODE=docker
-NEO4J_DOCKER_URI=bolt://localhost:7687
-NEO4J_DOCKER_USER=neo4j
-NEO4J_DOCKER_PASSWORD=khadok2025
-```
-
-### 3. Data Processing & Knowledge Graph Ingestion
-First, clean and normalize the raw Bangladeshi food CSV datasets, then ingest them into the Neo4j knowledge graph along with the NDG 2025 dietary rules:
-```bash
-# Navigate to the graphRAG engine directory
-cd graphRAG
-
-# Clean the raw dataset
+# Ingest data into Neo4j
 python3 preprocessing/clean_csv.py
-
-# Build the Neo4j knowledge graph
 python3 build_graph.py
+
+# Start the API server
+uvicorn app.main:app --reload
 ```
 
-### 4. Running the Engine
-You can test the GraphRAG reasoning engine directly to see the personalized safe foods and macro calculations in action:
+### 3. Frontend Dashboard
+The frontend is a modern React application.
 ```bash
-cd graphRAG
-python3 graph_rag/engine.py
+cd frontend
+npm install
+npm run dev
 ```
-
-### 5. Running the Frontend
-The frontend is a modern React application. For detailed installation and development instructions, please refer to the [Frontend README](frontend/README.md).
+Detailed instructions are in the [Frontend README](frontend/README.md).
 
 ---
 
-## Database Schema Architecture
+##  Knowledge Graph & Schema
 
-The system utilizes a hybrid database model to link static nutritional knowledge with dynamic user profiles. Below is the Entity-Relationship (ER) diagram detailing the data structure.
+The system utilizes a hybrid model to link nutritional science with user data. 
 
 ![Database Schema](graphRAG/schema.png)
 
-### Core Components
+### Core Logic:
+1.  **IBW & Macro Targeting:** Automatic calculation of Ideal Body Weight and caloric goals.
+2.  **Constraint Propagation:** The Graph engine traverses from `MedicalCondition` → `DietaryRule` → `FoodGroup` to filter unsafe items.
+3.  **LLM Reasoning:** Integrates with local/remote LLMs to synthesize culturally accurate meal suggestions.
 
-1. Static Knowledge Base
-   * Food & FoodGroup: Stores Bangladeshi food items with macronutrient data (calories, protein, carbs, fat, fiber) and their classifications.
-   * MedicalCondition: Represents physiological states and diseases (e.g., Diabetes, Hypertension).
-   * DietaryRule: Connects Medical Conditions to Food Groups, defining what to prefer, limit, or avoid based on NDG 2025 medical rationale.
+---
 
-2. Dynamic User Data
-   * UserProfile: Stores physical metrics (age, weight, height, activity level) required for caloric calculation.
-   * HealthLog: Tracks daily health metrics like weight fluctuations, blood sugar, and blood pressure.
-   * MealPlan & MealPlanFood: Records the AI-generated diet plans assigned to the user.
-   * UserCondition & UserFoodPreference: Mapping tables linking the user to their specific medical conditions and food likes/dislikes.
+##  Legal Notice
+DesiDiet AI is an AI-powered assistant and **not a medical device**. Full details are available in our [Conditions Page](https://desidiet.ai/conditions).
 
-## How the Personalization Works
-
-1. Calorie Calculation: The system calculates the Ideal Body Weight (IBW) and daily caloric targets based on the UserProfile and the latest HealthLog.
-2. Graph Retrieval: The GraphRAG engine traverses from the UserProfile to MedicalCondition to DietaryRule to filter out unsafe foods and boost preferred foods.
-3. LLM Generation: The retrieved safe foods and macro targets are passed to the Large Language Model to generate a personalized, culturally accurate meal plan.
+Developed with  for the people of Bangladesh. 
