@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  User, 
-  Layout, 
-  Activity, 
-  FileText, 
-  Languages, 
-  LogOut, 
-  Menu, 
-  X, 
+import {
+  User,
+  Layout,
+  Activity,
+  Languages,
+  LogOut,
+  Menu,
+  X,
   ArrowLeft,
   ChevronRight,
-  Home
+  Home,
+  Pill,
+  Apple,
+  BarChart2,
+  MessageSquare,
 } from 'lucide-react';
-import { useUserProfile } from '../../hooks/useUserProfile';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,25 +29,54 @@ interface DashboardLayoutProps {
   headerActions?: React.ReactNode;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
-  children, 
-  title, 
-  subtitle, 
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+  children,
+  title,
+  subtitle,
   noPadding,
   headerExtra,
   headerActions
 }) => {
   const { i18n } = useTranslation();
-  const { profile, targets } = useUserProfile();
+  const { profileData, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const profile = profileData?.profile;
+  const targets = profileData?.targets;
+  const isBn = i18n.language === 'bn';
+
+  const displayName = isBn
+    ? (profile?.name_bn || profile?.name_en || 'অতিথি')
+    : (profile?.name_en || profile?.name_bn || 'Guest');
+
+  // Calculate BMI from profile data if targets.bmi is missing
+  const computedBmi = (() => {
+    if (targets?.bmi) return targets.bmi.toFixed(1);
+    const w = profile?.weight_kg;
+    const h = profile?.height_cm;
+    if (w && h) return (w / ((h / 100) * (h / 100))).toFixed(1);
+    return '--';
+  })();
+
+  const calories = targets?.target_calories ?? '--';
+  const bmiCategory = targets?.bmi_category ?? (isBn ? '---' : '---');
 
   const navItems = [
-    { path: '/', label: 'হোমপেজ', icon: Home },
-    { path: '/chat', label: 'এআই অ্যাসিস্ট্যান্ট', icon: FileText },
-    { path: '/meal-plan', label: 'আজকের মিল প্ল্যান', icon: Layout },
-    { path: '/health-log', label: 'স্বাস্থ্য লগ আপডেট', icon: Activity },
+    { path: '/', label: isBn ? 'হোমপেজ' : 'Home', icon: Home },
+    { path: '/chat', label: isBn ? 'এআই অ্যাসিস্ট্যান্ট' : 'AI Assistant', icon: MessageSquare },
+    { path: '/meal-plan', label: isBn ? 'আজকের মিল প্ল্যান' : 'Meal Plan', icon: Layout },
+    { path: '/health-log', label: isBn ? 'স্বাস্থ্য লগ' : 'Health Log', icon: Activity },
+    { path: '/medicine', label: isBn ? 'ওষুধের রিমাইন্ডার' : 'Medicine', icon: Pill },
+    { path: '/foods', label: isBn ? 'খাবারের তালিকা' : 'Foods', icon: Apple },
+    { path: '/report', label: isBn ? 'পুষ্টি রিপোর্ট' : 'Report', icon: BarChart2 },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
 
   return (
     <div className="h-screen h-[100dvh] bg-cream flex overflow-hidden font-bn relative">
@@ -52,14 +84,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
               className="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[25] lg:hidden"
             />
-            <motion.aside 
+            <motion.aside
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
@@ -74,10 +106,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <User size={24} className="md:w-7 md:h-7" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bn font-bold text-lg md:text-xl leading-tight text-ink truncate">{profile.nameBn}</h3>
+                      <h3 className="font-bn font-bold text-lg md:text-xl leading-tight text-ink truncate">{displayName}</h3>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                        <span className="text-[0.6rem] md:text-[0.65rem] uppercase tracking-widest text-ink-faint font-body font-bold truncate">{targets.bmiCategory}</span>
+                        <span className="text-[0.6rem] md:text-[0.65rem] uppercase tracking-widest text-ink-faint font-body font-bold truncate">{bmiCategory}</span>
                       </div>
                     </div>
                   </div>
@@ -85,28 +117,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-2xl border border-ink/5 text-center">
                       <div className="text-[0.55rem] uppercase tracking-wider text-ink-faint font-body mb-1">BMI</div>
-                      <div className="font-bold text-base text-ink">{isNaN(targets.bmi) ? '--' : targets.bmi}</div>
+                      <div className="font-bold text-base text-ink">{computedBmi}</div>
                     </div>
                     <div className="bg-white p-3 rounded-2xl border border-ink/5 text-center">
                       <div className="text-[0.55rem] uppercase tracking-wider text-ink-faint font-body mb-1">KCAL</div>
-                      <div className="font-bold text-base text-accent">{isNaN(targets.targetCalories) ? '--' : targets.targetCalories}</div>
+                      <div className="font-bold text-base text-accent">{calories}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-grow space-y-2">
+                <nav className="flex-grow space-y-1.5">
                   <p className="text-[0.55rem] uppercase tracking-[0.2em] text-ink-faint font-body font-bold px-4 mb-3">Health Dashboard</p>
                   {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                      <Link 
+                      <Link
                         key={item.path}
-                        to={item.path} 
+                        to={item.path}
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-4 p-3 md:p-4 rounded-2xl transition-all group border border-transparent ${
-                          isActive 
-                            ? 'bg-ink text-cream shadow-xl shadow-ink/10' 
+                          isActive
+                            ? 'bg-ink text-cream shadow-xl shadow-ink/10'
                             : 'text-ink-muted hover:bg-cream hover:text-ink hover:border-ink/5'
                         }`}
                       >
@@ -123,17 +155,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </nav>
 
                 <div className="pt-6 md:pt-8 mt-auto border-t border-ink/5 space-y-2">
-                  <button 
-                    onClick={() => i18n.changeLanguage(i18n.language === 'bn' ? 'en' : 'bn')}
+                  <button
+                    onClick={() => i18n.changeLanguage(isBn ? 'en' : 'bn')}
                     className="w-full flex items-center gap-4 p-3 md:p-4 rounded-2xl hover:bg-cream transition-colors text-ink-muted hover:text-ink font-bold text-sm"
                   >
                     <Languages size={18} />
-                    <span>{i18n.language === 'bn' ? 'English' : 'বাংলায়'}</span>
+                    <span>{isBn ? 'Switch to English' : 'বাংলায় যান'}</span>
                   </button>
-                  <Link to="/" className="w-full flex items-center gap-4 p-3 md:p-4 rounded-2xl hover:bg-red-50 text-red-500 transition-colors font-bold text-sm">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-4 p-3 md:p-4 rounded-2xl hover:bg-red-50 text-red-500 transition-colors font-bold text-sm"
+                  >
                     <LogOut size={18} />
-                    <span>লগ আউট</span>
-                  </Link>
+                    <span>{isBn ? 'লগ আউট' : 'Log Out'}</span>
+                  </button>
                 </div>
               </div>
             </motion.aside>
@@ -145,12 +180,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="flex-1 flex flex-col relative bg-[#FDFCF9] overflow-hidden">
         {/* Cinematic Texture Background */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]" />
-        
+
         {/* Dynamic Header */}
         <header className="sticky top-0 p-4 md:p-6 lg:px-10 border-b border-ink/5 flex items-center justify-between z-30 bg-white/70 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-3 md:gap-5">
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2.5 md:p-3 bg-cream rounded-2xl text-ink-muted hover:bg-ink hover:text-cream transition-all flex shadow-sm interactive"
               >
@@ -181,7 +216,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </header>
 
         {/* Content Stream */}
-        <main className={`flex-1 relative z-10 hide-scrollbar scroll-smooth ${noPadding ? 'overflow-hidden flex flex-col' : 'overflow-y-auto p-4 md:p-8 lg:p-12'}`}>
+        <main className={`flex-1 relative z-10 scroll-smooth ${noPadding ? 'overflow-hidden flex flex-col' : 'overflow-y-auto p-4 md:p-8 lg:p-12'}`}>
           {children}
         </main>
       </div>

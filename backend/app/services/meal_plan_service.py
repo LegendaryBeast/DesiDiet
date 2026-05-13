@@ -361,6 +361,12 @@ async def save_meal_plan(user_id: str, plan_type: str, plan_data: Dict[str, Any]
     """Save a generated meal plan to the database."""
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
+    ai_cal = sum(
+        item.get("calories", 0)
+        for m in plan_data.get("meals", [])
+        for item in m.get("items", [])
+    )
+
     plan = await prisma.mealplan.create(
         data={
             "userId": user_id,
@@ -368,6 +374,7 @@ async def save_meal_plan(user_id: str, plan_type: str, plan_data: Dict[str, Any]
             "planType": plan_type,
             "planData": to_json_string(plan_data),
             "calorieTarget": plan_data.get("target_calories", 2000),
+            "aiSuggestionCal": ai_cal,
             "language": language,
         }
     )

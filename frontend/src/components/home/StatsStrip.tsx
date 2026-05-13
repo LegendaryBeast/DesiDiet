@@ -1,13 +1,16 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-const stats = [
-  { value: '11', suffix: '+', label: 'রোগের জন্য বিশেষ ডায়েট রুলস' },
-  { value: '200', suffix: '+', label: 'বাংলাদেশি খাবারের পুষ্টি ডেটাবেজ' },
-  { value: '2430', suffix: '', label: 'kcal গড় প্রাপ্তবয়স্ক বাংলাদেশি লক্ষ্যমাত্রা' },
-  { value: '100', suffix: '%', label: 'NDG 2025 ভিত্তিক বৈজ্ঞানিক পরামর্শ' },
+const getStats = (t: any) => [
+  { value: '11', suffix: '+', label: t('stats.s1') },
+  { value: '200', suffix: '+', label: t('stats.s2') },
+  { value: '2430', suffix: '', label: t('stats.s3') },
+  { value: '100', suffix: '%', label: t('stats.s4') },
 ];
 
 export const StatsStrip = () => {
+  const { t } = useTranslation();
+  const stats = getStats(t);
   return (
     <section className="bg-ink text-cream py-16 lg:py-24 px-6 md:px-12 lg:px-24 relative overflow-hidden">
       <div className="absolute bottom-[-2rem] right-8 font-display text-[8rem] lg:text-[12rem] font-black opacity-[0.03] pointer-events-none select-none tracking-tighter">
@@ -29,7 +32,7 @@ export const StatsStrip = () => {
               <span className="text-accent-light text-[1.5rem] lg:text-[2rem] ml-1">{s.suffix}</span>
             </div>
             <div className="font-bn text-[0.75rem] lg:text-[0.85rem] text-white/50 leading-[1.6]">
-              {s.label.split('<br />').map((line, j) => (
+              {s.label.split('<br />').map((line: string, j: number) => (
                 <span key={j} className="block">{line}</span>
               ))}
             </div>

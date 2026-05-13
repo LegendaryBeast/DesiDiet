@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const Nav = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const { isLoggedIn } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,9 +47,9 @@ export const Nav = () => {
             </Link>
           </li>
           <li>
-            <a href="/#conditions" className={`text-[0.65rem] lg:text-[0.75rem] tracking-[0.12em] uppercase transition-colors interactive ${isLightNav ? 'text-cream/70 hover:text-cream' : 'text-ink-muted hover:text-ink'}`}>
+            <Link to="/conditions" className={`text-[0.65rem] lg:text-[0.75rem] tracking-[0.12em] uppercase transition-colors interactive ${isLightNav ? 'text-cream/70 hover:text-cream' : 'text-ink-muted hover:text-ink'}`}>
               {t('nav.conditions')}
-            </a>
+            </Link>
           </li>
         </ul>
 
@@ -60,15 +62,27 @@ export const Nav = () => {
           >
             {i18n.language === 'bn' ? 'EN' : 'বাং'}
           </button>
-          <Link to="/profile" className="hidden sm:block">
-            <button className={`text-[0.65rem] lg:text-[0.75rem] tracking-[0.1em] uppercase px-4 lg:px-6 py-2 lg:py-2.5 border transition-all font-body interactive ${
-              isLightNav 
-                ? 'border-cream text-cream hover:bg-cream hover:text-ink' 
-                : 'border-ink bg-transparent text-ink hover:bg-ink hover:text-cream'
-            }`}>
-              {t('nav.start')}
-            </button>
-          </Link>
+          {isLoggedIn ? (
+            <Link to="/chat" className="hidden sm:block">
+              <button className={`text-[0.65rem] lg:text-[0.75rem] tracking-[0.1em] uppercase px-4 lg:px-6 py-2 lg:py-2.5 border transition-all font-body interactive ${
+                isLightNav 
+                  ? 'border-cream text-cream hover:bg-cream hover:text-ink' 
+                  : 'border-ink bg-transparent text-ink hover:bg-ink hover:text-cream'
+              }`}>
+                {i18n.language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
+              </button>
+            </Link>
+          ) : (
+            <Link to="/auth" className="hidden sm:block">
+              <button className={`text-[0.65rem] lg:text-[0.75rem] tracking-[0.1em] uppercase px-4 lg:px-6 py-2 lg:py-2.5 border transition-all font-body interactive ${
+                isLightNav 
+                  ? 'border-cream text-cream hover:bg-cream hover:text-ink' 
+                  : 'border-ink bg-transparent text-ink hover:bg-ink hover:text-cream'
+              }`}>
+                {t('nav.start')}
+              </button>
+            </Link>
+          )}
           {/* Mobile Menu Toggle */}
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -102,10 +116,18 @@ export const Nav = () => {
           >
             <a href="/#features" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bn text-ink hover:text-accent transition-colors">{t('nav.features')}</a>
             <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bn text-ink hover:text-accent transition-colors">{t('nav.about')}</Link>
-            <a href="/#conditions" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bn text-ink hover:text-accent transition-colors">{t('nav.conditions')}</a>
-            <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-              <button className="text-lg font-bn border border-ink px-10 py-3 bg-ink text-cream hover:bg-accent hover:border-accent transition-all">{t('nav.start')}</button>
-            </Link>
+            <Link to="/conditions" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bn text-ink hover:text-accent transition-colors">{t('nav.conditions')}</Link>
+            {isLoggedIn ? (
+              <Link to="/chat" onClick={() => setMobileMenuOpen(false)}>
+                <button className="text-lg font-bn border border-ink px-10 py-3 bg-ink text-cream hover:bg-accent hover:border-accent transition-all">
+                  {i18n.language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
+                </button>
+              </Link>
+            ) : (
+              <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                <button className="text-lg font-bn border border-ink px-10 py-3 bg-ink text-cream hover:bg-accent hover:border-accent transition-all">{t('nav.start')}</button>
+              </Link>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

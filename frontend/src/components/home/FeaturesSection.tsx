@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-const features = [
+const getFeatures = (t: any) => [
   {
     num: '01',
-    title: 'বাংলাদেশি খাবার, সবসময়',
-    desc: 'ইলিশ, রুই, ডাল-ভাত, শাকসবজি — সম্পূর্ণ স্থানীয় খাবারের তালিকা থেকে পরামর্শ।',
+    title: t('features.f1_title'),
+    desc: t('features.f1_desc'),
     icon: (
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="1.5"/>
@@ -14,8 +15,8 @@ const features = [
   },
   {
     num: '02',
-    title: 'রোগ-ভিত্তিক পুষ্টি পরিকল্পনা',
-    desc: 'ডায়াবেটিস, উচ্চ রক্তচাপ, কিডনি রোগ সহ ১১টি রোগের জন্য বিশেষ ডায়েট রুলস।',
+    title: t('features.f2_title'),
+    desc: t('features.f2_desc'),
     icon: (
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <rect x="4" y="8" width="32" height="24" rx="3" stroke="currentColor" strokeWidth="1.5"/>
@@ -25,8 +26,8 @@ const features = [
   },
   {
     num: '03',
-    title: 'সম্পূর্ণ ব্যক্তিগতকৃত',
-    desc: 'আপনার বয়স, ওজন, উচ্চতা ও কার্যকলাপ অনুযায়ী NDG 2025 ফর্মুলায় ক্যালোরি হিসাব।',
+    title: t('features.f3_title'),
+    desc: t('features.f3_desc'),
     icon: (
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <circle cx="20" cy="14" r="6" stroke="currentColor" strokeWidth="1.5"/>
@@ -36,8 +37,8 @@ const features = [
   },
   {
     num: '04',
-    title: 'GraphRAG + LLM প্রযুক্তি',
-    desc: 'Neo4j নলেজ গ্রাফ এবং উন্নত এআই মডেলের সমন্বয়ে তৈরি বিজ্ঞানসম্মত পরামর্শ।',
+    title: t('features.f4_title'),
+    desc: t('features.f4_desc'),
     icon: (
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <path d="M20 4 L24 16 H36 L26 24 L30 36 L20 28 L10 36 L14 24 L4 16 H16 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -47,15 +48,18 @@ const features = [
 ];
 
 export const FeaturesSection = () => {
+  const { t } = useTranslation();
+  const features = getFeatures(t);
+
   return (
     <section className="px-6 md:px-12 lg:px-24 py-20 lg:py-32 grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-12 lg:gap-20 bg-cream" id="features">
       <div className="lg:sticky lg:top-32 h-fit">
-        <div className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.2em] uppercase text-ink-faint mb-4 lg:mb-6">What We Offer</div>
+        <div className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.2em] uppercase text-ink-faint mb-4 lg:mb-6">{t('features.eyebrow')}</div>
         <h2 className="font-display text-[clamp(2.5rem,5vw,4rem)] font-bold leading-[1.1] tracking-tight mb-6 lg:mb-8 text-ink">
-          Smart.<br /><em className="italic text-ink-muted font-normal">Local.</em><br />Yours.
+          {t('features.title_1')}<br /><em className="italic text-ink-muted font-normal">{t('features.title_2')}</em><br />{t('features.title_3')}
         </h2>
         <p className="font-bn text-[0.9rem] lg:text-[1rem] leading-[1.8] text-ink-muted max-w-[320px]">
-          আপনার শরীর, আপনার অসুখ, আপনার পছন্দ — সব কিছু বিবেচনা করে তৈরি হয় আপনার ব্যক্তিগত খাদ্য পরিকল্পনা।
+          {t('features.desc')}
         </p>
       </div>
 

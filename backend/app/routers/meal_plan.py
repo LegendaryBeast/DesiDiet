@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import prisma
 from app.dependencies import get_current_user
-from app.schemas import MealPlanResponse, MealPlanFeedbackRequest, MarkSlotCompleteRequest, MarkSlotCompleteResponse
+from app.schemas import MealPlanResponse, MealPlanFeedbackRequest, MarkSlotCompleteRequest, MarkSlotCompleteResponse, EditMealPlanRequest
 from app.services.meal_plan_service import generate_daily_meal_plan, generate_weekly_meal_plan, save_meal_plan
 from app.utils import safe_dict, safe_list, to_json_string, from_json_string
 from datetime import datetime, timedelta
@@ -20,8 +20,11 @@ def _plan_to_response(plan) -> MealPlanResponse:
         plan_type=plan.planType,
         plan_data=safe_dict(plan.planData),
         calorie_target=plan.calorieTarget,
+        ai_suggestion_cal=plan.aiSuggestionCal,
+        user_choice_cal=plan.userChoiceCal,
         language=plan.language,
         feedback=plan.feedback,
+        completed_slots=safe_list(from_json_string(plan.completedSlots)) if plan.completedSlots else [],
         created_at=plan.createdAt,
     )
 
@@ -75,6 +78,13 @@ async def get_weekly_plan(language: str = "bn", current_user=Depends(get_current
     saved = []
     for i, day_plan in enumerate(weekly_data):
         day = today + timedelta(days=i)
+        
+        ai_cal = sum(
+            item.get("calories", 0)
+            for m in day_plan.get("meals", [])
+            for item in m.get("items", [])
+        )
+
         # Delete existing plan for this day if any
         await prisma.mealplan.delete_many(
             where={
@@ -90,6 +100,7 @@ async def get_weekly_plan(language: str = "bn", current_user=Depends(get_current
                 "planType": "daily",
                 "planData": to_json_string(day_plan),
                 "calorieTarget": day_plan.get("target_calories", 2000),
+                "aiSuggestionCal": ai_cal,
                 "language": language,
             }
         )
@@ -147,3 +158,20 @@ async def mark_slot_complete(plan_id: str, req: MarkSlotCompleteRequest, current
         completed_slots=completed_slots,
         message=f"Slot {req.slot} marked as {'complete' if req.completed else 'incomplete'}."
     )
+
+
+@router.patch("/{plan_id}/edit", response_model=MealPlanResponse)
+async def edit_meal_plan(plan_id: str, req: EditMealPlanRequest, current_user=Depends(get_current_user)):
+    """Edit a meal plan's items and update user choice calories."""
+    plan = await prisma.mealplan.find_unique(where={"planId": plan_id})
+    if not plan or plan.userId != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
+
+    updated = await prisma.mealplan.update(
+        where={"planId": plan_id},
+        data={
+            "planData": to_json_string(req.plan_data),
+            "userChoiceCal": req.user_choice_cal,
+        },
+    )
+    return _plan_to_response(updated)

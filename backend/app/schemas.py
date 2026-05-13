@@ -133,12 +133,19 @@ class MealPlanResponse(BaseModel):
     plan_type: str
     plan_data: Dict[str, Any]
     calorie_target: int
+    ai_suggestion_cal: Optional[int]
+    user_choice_cal: Optional[int]
     language: str
     feedback: Optional[int]
+    completed_slots: List[str] = []
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class EditMealPlanRequest(BaseModel):
+    plan_data: Dict[str, Any]
+    user_choice_cal: int
 
 
 class MealPlanFeedbackRequest(BaseModel):

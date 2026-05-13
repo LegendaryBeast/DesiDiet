@@ -64,56 +64,6 @@ async def get_safe_foods(current_user=Depends(get_current_user)):
     ]
 
 
-@router.get("/{code}", response_model=FoodDetailResponse)
-async def get_food_detail(code: str, current_user=Depends(get_current_user)):
-    """Get detailed food info with dietary rules for user's conditions."""
-    profile = await prisma.profile.find_unique(where={"userId": current_user.id})
-    conditions = safe_list(profile.medicalConditions) if profile else []
-
-    rag = _get_rag()
-    context = rag.get_chatbot_context(code, conditions)
-
-    # Also fetch basic food data from search
-    search_results = rag.search_food(code)
-    food = next((r for r in search_results if r["code"] == code), None)
-    if not food:
-        # Try by name
-        search_results = rag.search_food(code.replace("_", " "))
-        food = search_results[0] if search_results else None
-
-    if not food:
-        raise HTTPException(status_code=404, detail="Food not found")
-
-    # Parse rules from context string
-    rules = []
-    for line in context.split("\n"):
-        line = line.strip()
-        if line.startswith("⚠️ AVOID") or line.startswith("✅ PREFER"):
-            parts = line.split(":", 1)
-            if len(parts) == 2:
-                action = "AVOID" if "AVOID" in parts[0] else "PREFER"
-                condition_part = parts[0].split("(")
-                condition = condition_part[1].replace(")", "").strip() if len(condition_part) > 1 else ""
-                rules.append({
-                    "action": action,
-                    "condition": condition,
-                    "reason": parts[1].strip(),
-                })
-
-    return FoodDetailResponse(
-        code=food["code"],
-        name_en=food["name_en"],
-        name_bn=food["name_bn"],
-        food_group=food.get("food_group", "Unknown"),
-        calories=food.get("calories"),
-        protein=food.get("protein"),
-        fat=food.get("fat"),
-        carbs=food.get("carbs"),
-        fiber=food.get("fiber"),
-        rules=rules,
-    )
-
-
 INSIGHT_SYSTEM_PROMPT = """You are an AI nutritionist. For each food item, provide a 1-line personalized nutritional insight based on the user's conditions and goal.
 Return ONLY valid JSON in this exact structure:
 {
@@ -171,9 +121,18 @@ async def search_foods_with_insight(q: str, slot: str = "any", current_user=Depe
     except Exception:
         pass
 
+    safe_foods_results = rag.get_safe_foods(conditions=conditions, goal=goal, limit=200)
+    safe_codes = {f["code"] for f in safe_foods_results}
+
     response = []
     for r in results:
         insight = insights_map.get(r["code"], {})
+        safety_val = insight.get("safety", "safe")
+        
+        # Enforce consistency: if GraphRAG deemed it safe, override LLM caution
+        if r["code"] in safe_codes and safety_val in ["caution", "avoid"]:
+            safety_val = "safe"
+
         response.append(
             FoodWithInsightResponse(
                 code=r["code"],
@@ -185,9 +144,60 @@ async def search_foods_with_insight(q: str, slot: str = "any", current_user=Depe
                 fat=r.get("fat"),
                 carbs=r.get("carbs"),
                 food_group=r["food_group"],
-                safety=insight.get("safety", "safe"),
+                safety=safety_val,
                 ai_insight=insight.get("ai_insight", "Good nutritional choice."),
             )
         )
     return response
+
+
+@router.get("/{code}", response_model=FoodDetailResponse)
+async def get_food_detail(code: str, current_user=Depends(get_current_user)):
+    """Get detailed food info with dietary rules for user's conditions."""
+    profile = await prisma.profile.find_unique(where={"userId": current_user.id})
+    conditions = safe_list(profile.medicalConditions) if profile else []
+
+    rag = _get_rag()
+    context = rag.get_chatbot_context(code, conditions)
+
+    # Also fetch basic food data from search
+    search_results = rag.search_food(code)
+    food = next((r for r in search_results if r["code"] == code), None)
+    if not food:
+        # Try by name
+        search_results = rag.search_food(code.replace("_", " "))
+        food = search_results[0] if search_results else None
+
+    if not food:
+        raise HTTPException(status_code=404, detail="Food not found")
+
+    # Parse rules from context string
+    rules = []
+    for line in context.split("\n"):
+        line = line.strip()
+        if line.startswith("⚠️ AVOID") or line.startswith("✅ PREFER"):
+            parts = line.split(":", 1)
+            if len(parts) == 2:
+                action = "AVOID" if "AVOID" in parts[0] else "PREFER"
+                condition_part = parts[0].split("(")
+                condition = condition_part[1].replace(")", "").strip() if len(condition_part) > 1 else ""
+                rules.append({
+                    "action": action,
+                    "condition": condition,
+                    "reason": parts[1].strip(),
+                })
+
+    return FoodDetailResponse(
+        code=food["code"],
+        name_en=food["name_en"],
+        name_bn=food["name_bn"],
+        food_group=food.get("food_group", "Unknown"),
+        calories=food.get("calories"),
+        protein=food.get("protein"),
+        fat=food.get("fat"),
+        carbs=food.get("carbs"),
+        fiber=food.get("fiber"),
+        rules=rules,
+    )
+
 

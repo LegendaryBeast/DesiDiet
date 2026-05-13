@@ -2,10 +2,16 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 
 export const Hero = () => {
   const { t } = useTranslation();
+  const { profileData, isLoggedIn } = useAuth();
+  
+  const dailyTarget = isLoggedIn && profileData?.targets?.target_calories 
+    ? profileData.targets.target_calories 
+    : 1950;
 
   const reveal: Variants = {
     hidden: { opacity: 0, y: 30 },
@@ -153,18 +159,8 @@ export const Hero = () => {
           transition={{ delay: 0.6 }}
           className="absolute bottom-10 left-6 md:bottom-20 md:left-8 bg-white border border-ink/5 p-3 md:p-4 px-5 md:px-6 font-bn text-[0.75rem] md:text-[0.85rem] text-ink-muted shadow-2xl rounded-2xl z-20"
         >
-          <strong className="block text-ink text-[1.1rem] md:text-[1.3rem] font-black tracking-tight leading-tight mb-1">1950 kcal</strong>
-          আজকের লক্ষ্য
-        </motion.div>
-        
-        <motion.div 
-          initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="absolute top-20 right-6 md:top-40 md:right-8 bg-white border border-ink/5 p-3 md:p-4 px-5 md:px-6 font-bn text-[0.75rem] md:text-[0.85rem] text-ink-muted text-right shadow-2xl rounded-2xl z-20"
-        >
-          <strong className="block text-ink text-[1.1rem] md:text-[1.3rem] font-black tracking-tight leading-tight mb-1">রুই মাছ</strong>
-          ১২৬g প্রোটিন উৎস
+          <strong className="block text-ink text-[1.1rem] md:text-[1.3rem] font-black tracking-tight leading-tight mb-1">{dailyTarget} kcal</strong>
+          {t('hero.todays_goal')}
         </motion.div>
 
         <div className="absolute bottom-6 right-6 md:bottom-12 md:right-8 w-20 h-20 md:w-28 md:h-28 flex items-center justify-center">

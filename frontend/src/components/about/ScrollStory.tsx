@@ -1,28 +1,29 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-const chapters = [
+const getChapters = (t: any) => [
   {
     title: "The Core Science",
-    titleBn: "পুষ্টির মূল বিজ্ঞান",
-    desc: "আমরা প্রতিটি খাবারের উপাদানের গভীরে যাই। প্রোটিন থেকে মাইক্রোনিউট্রিয়েন্ট—সবকিছুর সঠিক হিসাব আমাদের নখদর্পণে।",
+    titleI18n: t('about.ch1.title'),
+    desc: t('about.ch1.desc'),
     image: "/images/story_1.png"
   },
   {
     title: "Tradition Reimagined",
-    titleBn: "ঐতিহ্যের নতুন রূপ",
-    desc: "বাঙালি খাবারের স্বাদ অক্ষুণ্ণ রেখেই আমরা তৈরি করি আধুনিক ডায়েট প্ল্যান। আপনার প্রিয় ইলিশ কিংবা খিচুড়ি—সবই থাকবে তালিকায়।",
+    titleI18n: t('about.ch2.title'),
+    desc: t('about.ch2.desc'),
     image: "/images/story_2.png"
   },
   {
     title: "Intelligence & Growth",
-    titleBn: "এআই ও অগ্রগতি",
-    desc: "GraphRAG প্রযুক্তির মাধ্যমে আমরা আপনার স্বাস্থ্যের ডেটা বিশ্লেষণ করি, যা আপনাকে দেয় ভবিষ্যতের জন্য সঠিক দিকনির্দেশনা।",
+    titleI18n: t('about.ch3.title'),
+    desc: t('about.ch3.desc'),
     image: "/images/story_3.png"
   }
 ];
 
-const ChapterVisualContainer = ({ index, scrollYProgress, total }: { index: number, scrollYProgress: any, total: number }) => {
+const ChapterVisualContainer = ({ index, scrollYProgress, total, chapters }: { index: number, scrollYProgress: any, total: number, chapters: any[] }) => {
   const opacity = useTransform(
     scrollYProgress,
     [index / total, (index + 0.4) / total, (index + 0.6) / total, (index + 1) / total],
@@ -38,7 +39,7 @@ const ChapterVisualContainer = ({ index, scrollYProgress, total }: { index: numb
   return (
     <motion.div 
       style={{ opacity, scale }}
-      className="absolute inset-0 z-0"
+      className="absolute inset-0 z-0 transition-all duration-700 ease-out"
     >
       <img 
         src={chapters[index].image} 
@@ -66,7 +67,7 @@ const ChapterText = ({ chapter, index, scrollYProgress, total }: { chapter: any,
   return (
     <motion.div 
       style={{ opacity, y }}
-      className="absolute inset-0 flex flex-col justify-center px-6 md:px-12 lg:px-24 pointer-events-none"
+      className="absolute inset-0 flex flex-col justify-center px-6 md:px-12 lg:px-24 pointer-events-none transition-all duration-700 ease-out"
     >
       <span className="font-display text-[8rem] md:text-[15rem] font-black text-ink/5 absolute top-1/2 left-0 -translate-y-1/2 select-none leading-none z-0">
         0{index + 1}
@@ -81,7 +82,7 @@ const ChapterText = ({ chapter, index, scrollYProgress, total }: { chapter: any,
           ))}
         </h2>
         <h3 className="font-bn text-2xl md:text-4xl font-bold text-accent-light mb-8">
-          {chapter.titleBn}
+          {chapter.titleI18n}
         </h3>
         <p className="font-bn text-lg md:text-xl text-ink-muted leading-relaxed max-w-lg">
           {chapter.desc}
@@ -107,17 +108,20 @@ const ProgressIndicator = ({ index, scrollYProgress, total }: { index: number, s
   return (
     <motion.div 
       style={{ width, backgroundColor }}
-      className="h-1 rounded-full transition-all duration-300"
+      className="h-1 rounded-full transition-all duration-500 ease-out"
     />
   );
 };
 
 export const ScrollStory = () => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
+
+  const chapters = getChapters(t);
 
   return (
     <div ref={containerRef} className="relative min-h-0 lg:min-h-[400vh] bg-cream">
@@ -126,23 +130,32 @@ export const ScrollStory = () => {
         <h2 className="font-display text-4xl font-black text-ink mb-8 text-center uppercase tracking-tighter">
           Our <span className="italic text-accent">Story</span>
         </h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {chapters.map((chapter, i) => (
-            <div key={i} className="flex flex-col gap-4">
-              <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border border-ink/5">
-                <img 
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+              className="flex flex-col gap-4"
+            >
+              <div className="aspect-[4/3] md:aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border border-ink/5">
+                <motion.img 
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
                   src={chapter.image} 
                   alt={chapter.title} 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="text-center">
-                <h4 className="font-bn font-black text-sm text-ink mb-2 leading-tight">{chapter.titleBn}</h4>
-                <p className="font-bn text-[0.65rem] text-ink-muted leading-tight opacity-60 line-clamp-2">
+              <div className="text-center md:text-left px-2">
+                <h4 className="font-bn font-black text-xl md:text-sm text-ink mb-2 leading-tight">{chapter.titleI18n}</h4>
+                <p className="font-bn text-sm md:text-[0.65rem] text-ink-muted leading-relaxed opacity-80 md:line-clamp-3">
                   {chapter.desc}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -182,6 +195,7 @@ export const ScrollStory = () => {
               index={i} 
               scrollYProgress={scrollYProgress} 
               total={chapters.length} 
+              chapters={chapters}
             />
           ))}
         </div>

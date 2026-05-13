@@ -10,12 +10,12 @@ export const HomeChatPreview = () => {
     <section className="py-12 lg:py-24 px-6 md:px-12 lg:px-24 bg-[#F9F6F2] overflow-hidden">
       <div className="max-w-[1200px] mx-auto">
         <div className="flex flex-col items-center text-center mb-16">
-          <div className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.2em] uppercase text-ink-faint mb-6 font-body">Experience the Intelligence</div>
+          <div className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.2em] uppercase text-ink-faint mb-6 font-body">{t('chat.experience_intelligence')}</div>
           <h2 className="font-display text-[1.8rem] lg:text-[4.5rem] font-bold text-ink leading-tight mb-4 lg:mb-8">
-            Talk to <em className="italic text-accent">DesiDiet AI</em>
+            {t('chat.talk_to_ai')} <em className="italic text-accent">DesiDiet AI</em>
           </h2>
           <p className="font-bn text-[0.85rem] lg:text-[1.2rem] text-ink-muted max-w-[600px] leading-relaxed">
-            আপনার পুষ্টি সংক্রান্ত যেকোনো প্রশ্ন করুন সরাসরি আমাদের এআই-কে।
+            {t('chat.placeholder')}
           </p>
         </div>
 

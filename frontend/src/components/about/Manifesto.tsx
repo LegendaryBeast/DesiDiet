@@ -1,7 +1,33 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const Manifesto = () => {
+  const { t } = useTranslation();
+  
+  const manifestoItems = [
+    {
+      title: t('manifesto.m1.title'),
+      fullTitle: t('manifesto.m1.fullTitle'),
+      desc: t('manifesto.m1.desc'),
+      fullDesc: t('manifesto.m1.fullDesc'),
+      num: "01"
+    },
+    {
+      title: t('manifesto.m2.title'),
+      fullTitle: t('manifesto.m2.fullTitle'),
+      desc: t('manifesto.m2.desc'),
+      fullDesc: t('manifesto.m2.fullDesc'),
+      num: "02"
+    },
+    {
+      title: t('manifesto.m3.title'),
+      fullTitle: t('manifesto.m3.fullTitle'),
+      desc: t('manifesto.m3.desc'),
+      fullDesc: t('manifesto.m3.fullDesc'),
+      num: "03"
+    }
+  ];
   return (
     <section className="bg-cream py-24 md:py-40 px-6 md:px-12 lg:px-24">
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
@@ -14,43 +40,21 @@ export const Manifesto = () => {
             className="lg:sticky lg:top-40"
           >
             <h2 className="font-display text-[8rem] md:text-[12rem] font-black text-ink/5 leading-none absolute -top-20 -left-10 select-none">
-              2025
+              {t('manifesto.bg_text')}
             </h2>
             <h3 className="font-display text-5xl md:text-7xl font-black text-ink leading-[0.95] mb-8">
-              Our <br /><em className="italic text-accent">Manifesto</em>
+              {t('manifesto.title_1')} <br /><em className="italic text-accent">{t('manifesto.title_2')}</em>
             </h3>
             <div className="w-20 h-2 bg-accent mb-8" />
             <p className="font-bn text-xl md:text-2xl text-ink-muted leading-relaxed">
-              আমরা বিশ্বাস করি, স্বাস্থ্যকর খাবার মানেই কেবল নামী-দামী রেসিপি নয়; বরং আমাদের পরিচিত বাংলাদেশি খাবারের সঠিক ভারসাম্য।
+              {t('manifesto.desc')}
             </p>
           </motion.div>
         </div>
 
         {/* Content Blocks - Now side-by-side on mobile */}
         <div className="lg:col-span-7 grid grid-cols-3 lg:grid-cols-1 gap-4 md:gap-16 lg:gap-24">
-          {[
-            {
-              title: "বিজ্ঞান",
-              fullTitle: "বিজ্ঞান ভিত্তিক পরামর্শ",
-              desc: "WHO এবং NDG 2025 ভিত্তিক পরামর্শ।",
-              fullDesc: "বিশ্ব স্বাস্থ্য সংস্থা (WHO) এবং বাংলাদেশের জাতীয় পুষ্টি নির্দেশিকা (NDG 2025) এর ওপর ভিত্তি করে আমাদের প্রতিটি পরামর্শ তৈরি করা হয়েছে।",
-              num: "01"
-            },
-            {
-              title: "এআই",
-              fullTitle: "কৃত্রিম বুদ্ধিমত্তা ও GraphRAG",
-              desc: "উন্নত GraphRAG প্রযুক্তির সঠিক ব্যবহার।",
-              fullDesc: "আমরা শুধু সাধারণ চ্যাটবট নই। আমরা ব্যবহার করি উন্নত GraphRAG প্রযুক্তি, যা আপনার শারীরিক অবস্থা ও খাবারের ডেটাবেজের মধ্যে সঠিক যোগসূত্র তৈরি করে।",
-              num: "02"
-            },
-            {
-              title: "সবাই",
-              fullTitle: "সবার জন্য স্বাস্থ্য",
-              desc: "সহজবোধ্য ভাষায় সঠিক স্বাস্থ্য তথ্য।",
-              fullDesc: "শহর থেকে গ্রাম—সব মানুষের জন্য সহজবোধ্য ভাষায় স্বাস্থ্য তথ্য পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।",
-              num: "03"
-            }
-          ].map((item, i) => (
+          {manifestoItems.map((item, i) => (
             <motion.div 
               key={i}
               initial={{ opacity: 0, y: 20 }}

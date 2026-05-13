@@ -23,6 +23,7 @@ export const Footer = () => {
             <li><Link to="/meal-plan" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">খাবার পরিকল্পনা</Link></li>
             <li><Link to="/health-log" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">স্বাস্থ্য লগ</Link></li>
             <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">রিপোর্ট</a></li>
+            <li><Link to="/conditions" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">শর্তাবলী ও ডিসক্লেমার</Link></li>
           </ul>
         </div>
 

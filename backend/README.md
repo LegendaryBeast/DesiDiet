@@ -1,4 +1,4 @@
-# Khadok-Bangla AI — Backend
+# DesiDiet AI Backend
 
 FastAPI backend for the Khadok-Bangla AI nutrition companion. Uses Prisma ORM, JWT auth, and integrates with the existing GraphRAG Neo4j knowledge graph.
 

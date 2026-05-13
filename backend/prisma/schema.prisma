@@ -71,6 +71,8 @@ model MealPlan {
   planType        String   @map("plan_type")
   planData        String   @map("plan_data")
   calorieTarget   Int      @map("calorie_target")
+  aiSuggestionCal Int?     @map("ai_suggestion_cal")
+  userChoiceCal   Int?     @map("user_choice_cal")
   language        String
   feedback        Int?
   completedSlots  String?  @map("completed_slots") // JSON array: ["breakfast","lunch"]
