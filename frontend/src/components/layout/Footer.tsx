@@ -19,10 +19,10 @@ export const Footer = () => {
         <div>
           <h4 className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.15em] uppercase text-white/40 mb-6 lg:mb-8 font-body">Product</h4>
           <ul className="flex flex-col gap-3">
-            <li><a href="#features" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">বৈশিষ্ট্য</a></li>
+            <li><a href="/#features" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">বৈশিষ্ট্য</a></li>
             <li><Link to="/meal-plan" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">খাবার পরিকল্পনা</Link></li>
             <li><Link to="/health-log" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">স্বাস্থ্য লগ</Link></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">রিপোর্ট</a></li>
+            <li><Link to="/report" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">রিপোর্ট</Link></li>
             <li><Link to="/conditions" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">শর্তাবলী ও ডিসক্লেমার</Link></li>
           </ul>
         </div>
@@ -30,20 +30,20 @@ export const Footer = () => {
         <div>
           <h4 className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.15em] uppercase text-white/40 mb-6 lg:mb-8 font-body">Science</h4>
           <ul className="flex flex-col gap-3">
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">NDG 2025</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">GraphRAG</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">Neo4j</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">LLM Layer</a></li>
+            <li><a href="https://www.who.int/publications/i/item/9789240074979" target="_blank" rel="noopener noreferrer" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">NDG 2025</a></li>
+            <li><a href="https://microsoft.github.io/graphrag/" target="_blank" rel="noopener noreferrer" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">GraphRAG</a></li>
+            <li><a href="https://neo4j.com/" target="_blank" rel="noopener noreferrer" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">Neo4j</a></li>
+            <li><a href="https://groq.com/" target="_blank" rel="noopener noreferrer" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">LLM Layer</a></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-[0.65rem] lg:text-[0.68rem] tracking-[0.15em] uppercase text-white/40 mb-6 lg:mb-8 font-body">Contact</h4>
           <ul className="flex flex-col gap-3">
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">সাপোর্ট</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">API</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">GitHub</a></li>
-            <li><a href="#" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">Blog</a></li>
+            <li><a href="mailto:support@desidiet.ai" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">সাপোর্ট</a></li>
+            <li><Link to="/chat" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">AI অ্যাসিস্ট্যান্ট</Link></li>
+            <li><a href="https://github.com/LegendaryBeast/DesiDiet" target="_blank" rel="noopener noreferrer" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">GitHub</a></li>
+            <li><Link to="/about" className="font-bn text-[0.85rem] text-white/60 hover:text-white transition-colors">আমাদের সম্পর্কে</Link></li>
           </ul>
         </div>
       </div>

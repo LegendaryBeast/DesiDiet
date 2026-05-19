@@ -173,8 +173,10 @@ async def chat(req: ChatRequest, current_user=Depends(get_current_user)):
 
         # Re-inject last 10 turns from client-provided history
         for turn in history[-10:]:
-            if turn.get("role") in ("user", "assistant") and turn.get("content"):
-                messages.append({"role": turn["role"], "content": turn["content"]})
+            role = getattr(turn, "role", None)
+            content = getattr(turn, "content", None)
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
 
         messages.append({"role": "user", "content": req.message})
 

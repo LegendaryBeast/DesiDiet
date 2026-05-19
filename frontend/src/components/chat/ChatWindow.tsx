@@ -8,14 +8,14 @@ import {
   FileText,
   Send,
   Flame,
-  History,
+  Trash2,
   Bot,
   WifiOff,
-  User,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardLayout } from '../layout/DashboardLayout';
+import { ChatMessage } from './ChatMessage';
 import { chatApi, type ChatHistoryItem, isAuthenticated } from '../../lib/api';
 
 interface Message {
@@ -148,8 +148,9 @@ export const ChatWindow = () => {
         <button
           onClick={() => { abortRef.current?.(); setMessages([]); setApiError(null); }}
           className="p-2 md:p-3 bg-cream text-ink-muted hover:bg-red-50 hover:text-red-500 rounded-xl transition-all flex items-center gap-2 text-[0.65rem] md:text-xs font-bold font-bn shadow-sm"
+          title={t('chat.clear_chat')}
         >
-          <History size={16} />
+          <Trash2 size={16} />
           <span className="hidden sm:inline">{t('chat.clear_chat')}</span>
         </button>
       )}
@@ -230,46 +231,14 @@ export const ChatWindow = () => {
               </motion.div>
             ) : (
               messages.map((msg) => (
-                <motion.div
+                <ChatMessage
                   key={msg.id}
-                  initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2 md:gap-4`}
-                >
-                  {msg.type === 'ai' && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-[1.25rem] bg-ink flex-shrink-0 flex items-center justify-center text-cream shadow-xl mb-1 transform -rotate-6 border-2 border-white/10"
-                    >
-                      <Bot size={16} className="md:w-6 md:h-6" />
-                    </motion.div>
-                  )}
-                  <div className={`relative p-4 md:p-7 lg:p-9 rounded-[1.5rem] md:rounded-[2.8rem] font-bn leading-relaxed text-sm md:text-lg max-w-[92%] md:max-w-[80%] lg:max-w-[70%] shadow-lg transition-all duration-300 ${
-                    msg.type === 'user'
-                      ? 'bg-ink text-cream rounded-br-none shadow-ink/30'
-                      : 'bg-white border border-ink/5 text-ink rounded-tl-none ring-1 ring-ink/5'
-                  }`}>
-                    {/* Loading dots when empty */}
-                    {msg.type === 'ai' && msg.text === '' && (
-                      <div className="flex gap-1.5 py-2 px-1">
-                        <div className="w-2 h-2 bg-ink/20 rounded-full animate-pulse" />
-                        <div className="w-2 h-2 bg-ink/20 rounded-full animate-pulse delay-75" />
-                        <div className="w-2 h-2 bg-ink/20 rounded-full animate-pulse delay-150" />
-                      </div>
-                    )}
-                    <div className="relative z-10 whitespace-pre-wrap">{msg.text}</div>
-                    {/* Streaming cursor */}
-                    {msg.type === 'ai' && isStreaming && msg.text !== '' && (
-                      <span className="inline-block w-0.5 h-5 bg-accent ml-1 animate-pulse" />
-                    )}
-                    <div className={`text-[0.6rem] md:text-[0.65rem] mt-2 md:mt-4 font-body font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      {msg.type === 'ai' && <div className="w-1 h-1 bg-accent rounded-full animate-ping" />}
-                      {msg.time}
-                    </div>
-                  </div>
-                </motion.div>
+                  id={msg.id}
+                  type={msg.type}
+                  text={msg.text}
+                  time={msg.time}
+                  isStreaming={isStreaming && msg.type === 'ai'}
+                />
               ))
             )}
 
@@ -326,12 +295,13 @@ export const ChatWindow = () => {
         <div className="p-4 md:p-8 bg-white/90 backdrop-blur-xl border-t border-ink/5 z-30 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
           <div className="max-w-5xl mx-auto flex items-center gap-3 md:gap-5">
             <button
-              aria-label="View history"
+              aria-label="Clear chat"
               onClick={() => setMessages([])}
               className="p-4 md:p-5 bg-ink text-cream rounded-[1.2rem] md:rounded-[1.5rem] shadow-2xl hover:bg-accent transition-all shrink-0 group relative overflow-hidden"
+              title="চ্যাট মুছুন"
             >
               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform" />
-              <History size={22} className="relative z-10" />
+              <Trash2 size={22} className="relative z-10" />
             </button>
 
             <div className="flex-1 bg-white border border-ink/10 rounded-full flex items-center px-4 md:px-8 py-1 md:py-2 shadow-2xl shadow-ink/5 focus-within:border-accent/60 focus-within:ring-4 ring-accent/5 transition-all duration-500">

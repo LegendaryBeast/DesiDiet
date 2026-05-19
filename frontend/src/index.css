@@ -28,6 +28,58 @@
   }
 }
 
+/* Markdown prose styles for ChatMessage */
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply font-bold text-ink mt-4 mb-2 first:mt-0;
+}
+.prose h1 { @apply text-xl; }
+.prose h2 { @apply text-lg; }
+.prose h3 { @apply text-base; }
+.prose p {
+  @apply text-ink mb-2 last:mb-0;
+}
+.prose ul, .prose ol {
+  @apply pl-5 mb-2;
+}
+.prose ul { @apply list-disc; }
+.prose ol { @apply list-decimal; }
+.prose li {
+  @apply text-ink mb-1;
+}
+.prose li::marker {
+  @apply text-accent;
+}
+.prose strong, .prose b {
+  @apply font-bold text-accent;
+}
+.prose code {
+  @apply bg-cream px-1.5 py-0.5 rounded text-sm font-mono text-ink;
+}
+.prose pre {
+  @apply bg-ink text-cream p-3 rounded-xl overflow-x-auto text-sm my-2;
+}
+.prose pre code {
+  @apply bg-transparent text-cream p-0;
+}
+.prose blockquote {
+  @apply border-l-4 border-accent pl-4 italic text-ink-muted my-2;
+}
+.prose a {
+  @apply text-accent underline underline-offset-2 hover:text-ink transition-colors;
+}
+.prose table {
+  @apply w-full text-sm border-collapse my-2;
+}
+.prose th, .prose td {
+  @apply border border-ink/10 px-3 py-2 text-left;
+}
+.prose th {
+  @apply bg-cream font-bold text-ink;
+}
+.prose hr {
+  @apply border-ink/10 my-4;
+}
+
 /* Custom scrollbar for premium feel */
 ::-webkit-scrollbar {
   width: 6px;

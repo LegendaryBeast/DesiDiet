@@ -29,10 +29,15 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
-    # LLM — Groq (OpenAI-compatible)
+    # ── Primary LLM (API2D / user-provided) ───────────────────────────────────
     llm_api_key: str = Field(alias="LLM_API_KEY")
-    llm_base_url: str = Field(default="https://api.groq.com/openai/v1", alias="LLM_BASE_URL")
-    llm_model: str = Field(default="llama-3.3-70b-versatile", alias="LLM_MODEL")
+    llm_base_url: str = Field(default="https://openai.api2d.net/v1", alias="LLM_BASE_URL")
+    llm_model: str = Field(default="gpt-4o-mini", alias="LLM_MODEL")
+
+    # ── Fallback LLM (Groq) ───────────────────────────────────────────────────
+    llm_fallback_api_key: str = Field(default="", alias="LLM_FALLBACK_API_KEY")
+    llm_fallback_base_url: str = Field(default="https://api.groq.com/openai/v1", alias="LLM_FALLBACK_BASE_URL")
+    llm_fallback_model: str = Field(default="llama-3.3-70b-versatile", alias="LLM_FALLBACK_MODEL")
 
     @property
     def cors_origin_list(self) -> List[str]:

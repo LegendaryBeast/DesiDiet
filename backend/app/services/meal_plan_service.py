@@ -154,26 +154,30 @@ def _generate_fallback_meal_plan(
         categories.setdefault(cat, []).append(f)
 
     def pick(cat, used):
+        # Try category first, excluding already-used items
         pool = [f for f in categories.get(cat, []) if f["code"] not in used and f["code"] not in used_codes_global]
         if pool:
             chosen = random.choice(pool)
             used.add(chosen["code"])
             used_codes_global.add(chosen["code"])
             return chosen
-        pool = [f for f in safe_foods if f["code"] not in used and f["code"] not in used_codes_global]
+        # Fall back to any safe food not used in this meal
+        pool = [f for f in safe_foods if f["code"] not in used]
         if pool:
             chosen = random.choice(pool)
             used.add(chosen["code"])
             used_codes_global.add(chosen["code"])
             return chosen
-        return safe_foods[0]
-
-    used_codes = set()
+        # Absolute fallback: random from all safe foods
+        chosen = random.choice(safe_foods)
+        used.add(chosen["code"])
+        return chosen
 
     def make_meal(slot, slot_bn, pct):
         target = int(targets["target_calories"] * pct)
         items = []
         meal_cals = 0
+        used_codes = set()
 
         grain = pick("Cereals & Grains", used_codes)
         items.append({
@@ -182,7 +186,7 @@ def _generate_fallback_meal_plan(
             "name_en": grain["name_en"],
             "amount_g": 150 if slot in ["lunch", "dinner"] else 100,
             "calories": grain.get("calories", 150),
-            "why_bn": "শক্তির উৎস" if language == "bn" else "Energy source",
+            "why_bn": "শক্তির উৎস — আপনার দৈনিক কার্যকলাপের জন্য প্রয়োজনীয় শক্তি যোগায়" if language == "bn" else "Energy source",
         })
         meal_cals += grain.get("calories", 150)
 
@@ -191,6 +195,8 @@ def _generate_fallback_meal_plan(
             protein = pick("Pulses & Legumes", used_codes)
         if not protein:
             protein = pick("Eggs", used_codes)
+        if not protein:
+            protein = pick("Meat & Poultry", used_codes)
         if protein:
             items.append({
                 "food_code": protein["code"],
@@ -198,7 +204,7 @@ def _generate_fallback_meal_plan(
                 "name_en": protein["name_en"],
                 "amount_g": 100 if slot in ["lunch", "dinner"] else 50,
                 "calories": protein.get("calories", 150),
-                "why_bn": "প্রোটিনের উৎস" if language == "bn" else "Protein source",
+                "why_bn": "প্রোটিনের উৎস — পেশী ও শরীরের মেরামতের জন্য" if language == "bn" else "Protein source",
             })
             meal_cals += protein.get("calories", 150)
 
@@ -214,7 +220,7 @@ def _generate_fallback_meal_plan(
                 "name_en": veg["name_en"],
                 "amount_g": 80,
                 "calories": veg.get("calories", 30),
-                "why_bn": "ভিটামিন ও আঁশ সমৃদ্ধ" if language == "bn" else "Rich in vitamins and fiber",
+                "why_bn": "ভিটামিন ও আঁশ সমৃদ্ধ — হজম ও রোগ প্রতিরোধ ক্ষমতা বাড়ায়" if language == "bn" else "Rich in vitamins and fiber",
             })
             meal_cals += veg.get("calories", 30)
 
@@ -295,17 +301,58 @@ async def generate_daily_meal_plan(user_id: str, language: str = "bn") -> Dict[s
     safe_foods = rag.get_safe_foods(conditions=conditions, goal=goal, limit=50)
 
     plan_data = None
-    try:
-        messages = _build_meal_plan_prompt(profile, targets, safe_foods, conditions, language)
-        llm_response = await llm_client.chat_completion(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=3000,
-            response_format={"type": "json_object"},
-        )
-        plan_data = json.loads(llm_response)
-    except Exception:
+    llm_error = None
+
+    # Check if primary model supports JSON mode (MiniMax does not)
+    primary_model = getattr(llm_client, "primary_model", "")
+    supports_json_mode = "minimax" not in primary_model.lower()
+
+    # Attempt 1: LLM with JSON mode (if supported)
+    if supports_json_mode:
+        try:
+            messages = _build_meal_plan_prompt(profile, targets, safe_foods, conditions, language)
+            llm_response = await llm_client.chat_completion(
+                messages=messages,
+                temperature=0.7,
+                max_tokens=3000,
+                response_format={"type": "json_object"},
+            )
+            plan_data = json.loads(llm_response)
+        except Exception as e:
+            llm_error = str(e)
+
+    # Attempt 2: LLM without JSON mode (MiniMax and some providers)
+    if plan_data is None:
+        try:
+            messages = _build_meal_plan_prompt(profile, targets, safe_foods, conditions, language)
+            # Append stronger JSON-only instruction
+            messages[-1]["content"] += (
+                "\n\nCRITICAL: Return ONLY a valid JSON object. "
+                "No markdown code blocks, no explanation text before or after JSON. "
+                "Your entire response must be parseable by json.loads()."
+            )
+            llm_response = await llm_client.chat_completion(
+                messages=messages,
+                temperature=0.7,
+                max_tokens=3000,
+            )
+            # Try to extract JSON from response
+            text = llm_response.strip()
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+            plan_data = json.loads(text)
+        except Exception as e:
+            llm_error = f"{llm_error}; parse fallback: {e}" if llm_error else str(e)
+
+    # Attempt 3: Template fallback
+    if plan_data is None:
         plan_data = _generate_fallback_meal_plan(profile, targets, safe_foods, conditions, language)
+        plan_data["_llm_error"] = llm_error
 
     plan_data.setdefault("target_calories", targets["target_calories"])
     plan_data.setdefault("macros", {

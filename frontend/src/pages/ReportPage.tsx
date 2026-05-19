@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart2,
@@ -13,6 +13,7 @@ import {
   AlertCircle,
   RefreshCw,
   FileText,
+  X,
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { reportsApi, type NutritionReport, type ConditionsReport } from '../lib/api';
@@ -26,6 +27,7 @@ export const ReportPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState(user?.email || '');
 
   const fetchReports = useCallback(async () => {
@@ -54,11 +56,12 @@ export const ReportPage = () => {
     if (!emailInput) return;
     setEmailLoading(true);
     setEmailSuccess(null);
+    setEmailError(null);
     try {
       const res = await reportsApi.sendEmail(emailInput, 'bn');
       setEmailSuccess(res.message);
-    } catch {
-      setEmailSuccess('ইমেইল পাঠানো সম্ভব হয়নি');
+    } catch (err: unknown) {
+      setEmailError(err instanceof Error ? err.message : 'ইমেইল পাঠানো সম্ভব হয়নি');
     } finally {
       setEmailLoading(false);
     }
@@ -66,10 +69,38 @@ export const ReportPage = () => {
 
   const targets = nutritionReport?.targets;
 
+  // Calculate actual macro percentages from API data instead of hardcoding
+  const macroBreakdown = useMemo(() => {
+    if (!targets) return null;
+    const cal = targets.target_calories;
+    if (!cal || cal <= 0) return null;
+    const proteinCal = (targets.protein_g || 0) * 4;
+    const carbsCal = (targets.carbs_g || 0) * 4;
+    const fatCal = (targets.fat_g || 0) * 9;
+    const totalMacroCal = proteinCal + carbsCal + fatCal;
+    const scale = totalMacroCal > 0 ? cal / totalMacroCal : 1;
+    return {
+      protein: { g: targets.protein_g || 0, pct: Math.round((proteinCal * scale / cal) * 100) || 15 },
+      carbs: { g: targets.carbs_g || 0, pct: Math.round((carbsCal * scale / cal) * 100) || 55 },
+      fat: { g: targets.fat_g || 0, pct: Math.round((fatCal * scale / cal) * 100) || 30 },
+    };
+  }, [targets]);
+
+  // South Asian BMI thresholds
+  const getBmiInsight = (bmi: number | null) => {
+    if (bmi == null) return null;
+    if (bmi < 18.5) return { label: 'কম ওজন', color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' };
+    if (bmi < 23) return { label: 'স্বাভাবিক', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' };
+    if (bmi < 27.5) return { label: 'অতিরিক্ত ওজন', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+    return { label: 'স্থূলতা', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200' };
+  };
+
+  const bmiInsight = targets?.bmi != null ? getBmiInsight(targets.bmi) : null;
+
   return (
     <DashboardLayout
       title="পুষ্টি রিপোর্ট"
-      subtitle="Nutrition Report"
+      subtitle="NDG 2025 ভিত্তিক পুষ্টি বিশ্লেষণ"
       headerActions={(
         <button onClick={fetchReports} disabled={loading}
           className="p-2.5 bg-cream rounded-2xl text-ink-muted hover:bg-accent hover:text-white transition-all"
@@ -132,7 +163,13 @@ export const ReportPage = () => {
             {/* BMI and Body Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label: 'BMI', val: targets.bmi != null ? targets.bmi.toFixed(1) : '--', sub: targets.bmi_category || '---', color: 'bg-white border-ink/5' },
+                { 
+                  label: 'BMI', 
+                  val: targets.bmi != null ? targets.bmi.toFixed(1) : '--', 
+                  sub: targets.bmi_category || '---', 
+                  extra: bmiInsight,
+                  color: 'bg-white border-ink/5' 
+                },
                 { label: 'আদর্শ ওজন', val: targets.ideal_body_weight_kg != null ? `${targets.ideal_body_weight_kg.toFixed(1)} kg` : '--', sub: 'Ideal Body Weight', color: 'bg-white border-ink/5' },
                 { label: 'পানির লক্ষ্য', val: targets.water_l != null ? `${Number(targets.water_l).toFixed(1)} L` : '--', sub: 'Daily Water Intake', color: 'bg-white border-ink/5' },
               ].map((item, i) => (
@@ -142,6 +179,12 @@ export const ReportPage = () => {
                   <div className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-2 font-body">{item.label}</div>
                   <div className="font-display text-3xl font-black text-ink">{item.val}</div>
                   <div className="text-sm text-ink-muted font-bn mt-1">{item.sub}</div>
+                  {'extra' in item && item.extra && (
+                    <div className={`mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${item.extra.bg} ${item.extra.color} border ${item.extra.border}`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                      {item.extra.label}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -168,32 +211,34 @@ export const ReportPage = () => {
               </div>
             )}
 
-            {/* Macro Distribution */}
-            <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-ink/5 shadow-sm">
-              <h3 className="font-bn text-lg font-bold text-ink mb-6">ম্যাক্রো বিভাজন (NDG 2025)</h3>
-              <div className="space-y-4">
-                {[
-                  { label: 'প্রোটিন', pct: 15, val: targets.protein_g, color: 'bg-amber-400' },
-                  { label: 'শর্করা', pct: 55, val: targets.carbs_g, color: 'bg-accent' },
-                  { label: 'চর্বি', pct: 30, val: targets.fat_g, color: 'bg-forest' },
-                ].map((m, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between font-bn text-sm mb-2">
-                      <span className="font-bold text-ink">{m.label}</span>
-                      <span className="text-ink-faint">{m.pct}% — {m.val}g</span>
+            {/* Macro Distribution — dynamically calculated */}
+            {macroBreakdown && (
+              <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-ink/5 shadow-sm">
+                <h3 className="font-bn text-lg font-bold text-ink mb-6">ম্যাক্রো বিভাজন (NDG 2025)</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: 'প্রোটিন', pct: macroBreakdown.protein.pct, val: macroBreakdown.protein.g, color: 'bg-amber-400' },
+                    { label: 'শর্করা', pct: macroBreakdown.carbs.pct, val: macroBreakdown.carbs.g, color: 'bg-accent' },
+                    { label: 'চর্বি', pct: macroBreakdown.fat.pct, val: macroBreakdown.fat.g, color: 'bg-forest' },
+                  ].map((m, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between font-bn text-sm mb-2">
+                        <span className="font-bold text-ink">{m.label}</span>
+                        <span className="text-ink-faint">{m.pct}% — {m.val}g</span>
+                      </div>
+                      <div className="h-2.5 bg-cream rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${m.pct}%` }}
+                          transition={{ duration: 1, delay: 0.3 + i * 0.15 }}
+                          className={`h-full ${m.color} rounded-full`}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2.5 bg-cream rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${m.pct}%` }}
-                        transition={{ duration: 1, delay: 0.3 + i * 0.15 }}
-                        className={`h-full ${m.color} rounded-full`}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Conditions Rules */}
             {conditionsReport && conditionsReport.conditions.length > 0 && (
@@ -258,6 +303,13 @@ export const ReportPage = () => {
                   className="mt-3 text-sm text-green-600 font-bn flex items-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" /> {emailSuccess}
+                </motion.p>
+              )}
+              {emailError && (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="mt-3 text-sm text-red-500 font-bn flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" /> {emailError}
                 </motion.p>
               )}
             </div>

@@ -23,9 +23,18 @@ import {
   CheckCircle2,
   TrendingDown,
   TrendingUp,
+  Thermometer,
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { healthLogApi, type HealthLogResponse, type HealthTrendsResponse } from '../lib/api';
+
+// Theme colors for charts (avoid hardcoded hex)
+const CHART_COLORS = {
+  accent: '#C8472A',
+  blue: '#3B82F6',
+  grid: '#F5F0E8',
+  tick: '#9E9890',
+};
 
 export const HealthLog = () => {
   const [activeTab, setActiveTab] = useState<'log' | 'history' | 'trends'>('log');
@@ -74,8 +83,34 @@ export const HealthLog = () => {
     else if (activeTab === 'trends') fetchTrends();
   }, [activeTab, fetchLogs, fetchTrends]);
 
+  // Validation helpers
+  const validateForm = (): string | null => {
+    if (weightKg) {
+      const w = parseFloat(weightKg);
+      if (w < 20 || w > 200) return 'ওজন ২০-২০০ কেজির মধ্যে হতে হবে';
+    }
+    if (bloodSugar) {
+      const s = parseFloat(bloodSugar);
+      if (s < 2 || s > 30) return 'রক্তের শর্করা ২-৩০ mmol/L এর মধ্যে হতে হবে';
+    }
+    if (hba1c) {
+      const h = parseFloat(hba1c);
+      if (h < 3 || h > 20) return 'HbA1c ৩-২০% এর মধ্যে হতে হবে';
+    }
+    if (bloodPressure) {
+      const bpRegex = /^\d{2,3}\/\d{2,3}$/;
+      if (!bpRegex.test(bloodPressure.trim())) return 'রক্তচাপ সঠিক ফরম্যাটে দিন (যেমন: ১২০/৮০)';
+    }
+    return null;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setSaveLoading(true);
     setError(null);
     setSuccess(null);
@@ -119,6 +154,9 @@ export const HealthLog = () => {
     sugar: val,
   }));
 
+  // Get latest values for placeholders
+  const latestLog = logs[0];
+
   return (
     <DashboardLayout title="স্বাস্থ্য লগ" subtitle={today}>
       <div className="max-w-5xl mx-auto pb-20">
@@ -126,7 +164,7 @@ export const HealthLog = () => {
         <div className="flex justify-center mb-10">
           <div className="flex bg-white p-1.5 rounded-2xl border border-ink/5 shadow-sm gap-1">
             {[
-              { id: 'log' as const, label: 'আজকের লগ', icon: Plus },
+              { id: 'log' as const, label: 'নতুন লগ', icon: Plus },
               { id: 'history' as const, label: 'ইতিহাস', icon: History },
               { id: 'trends' as const, label: 'ট্রেন্ড', icon: Activity },
             ].map(({ id, label, icon: Icon }) => (
@@ -175,8 +213,8 @@ export const HealthLog = () => {
                     <label className="block font-bn text-xs font-bold uppercase tracking-widest text-ink-faint mb-2">ওজন (কেজি)</label>
                     <div className="relative group">
                       <Weight className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-faint group-focus-within:text-accent transition-colors" />
-                      <input type="number" step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)}
-                        placeholder="যেমন: ৭০.৫"
+                      <input type="number" step="0.1" min="20" max="200" value={weightKg} onChange={(e) => setWeightKg(e.target.value)}
+                        placeholder={latestLog?.weight_kg ? `সর্বশেষ: ${latestLog.weight_kg} kg` : 'যেমন: ৭০.৫'}
                         className="w-full bg-cream/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 font-bn focus:bg-white focus:border-accent/20 outline-none transition-all"
                       />
                     </div>
@@ -186,8 +224,8 @@ export const HealthLog = () => {
                     <label className="block font-bn text-xs font-bold uppercase tracking-widest text-ink-faint mb-2">রক্তের শর্করা (mmol/L)</label>
                     <div className="relative group">
                       <Droplets className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
-                      <input type="number" step="0.1" value={bloodSugar} onChange={(e) => setBloodSugar(e.target.value)}
-                        placeholder="যেমন: ৬.৫"
+                      <input type="number" step="0.1" min="2" max="30" value={bloodSugar} onChange={(e) => setBloodSugar(e.target.value)}
+                        placeholder={latestLog?.blood_sugar ? `সর্বশেষ: ${latestLog.blood_sugar}` : 'যেমন: ৬.৫'}
                         className="w-full bg-cream/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 font-bn focus:bg-white focus:border-accent/20 outline-none transition-all"
                       />
                     </div>
@@ -198,7 +236,7 @@ export const HealthLog = () => {
                     <div className="relative group">
                       <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-faint group-focus-within:text-accent transition-colors" />
                       <input type="text" value={bloodPressure} onChange={(e) => setBloodPressure(e.target.value)}
-                        placeholder="যেমন: ১২০/৮০"
+                        placeholder={latestLog?.blood_pressure ? `সর্বশেষ: ${latestLog.blood_pressure}` : 'যেমন: ১২০/৮০'}
                         className="w-full bg-cream/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 font-bn focus:bg-white focus:border-accent/20 outline-none transition-all"
                       />
                     </div>
@@ -208,8 +246,8 @@ export const HealthLog = () => {
                     <label className="block font-bn text-xs font-bold uppercase tracking-widest text-ink-faint mb-2">HbA1c (%)</label>
                     <div className="relative group">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-faint group-focus-within:text-accent transition-colors" />
-                      <input type="number" step="0.1" value={hba1c} onChange={(e) => setHba1c(e.target.value)}
-                        placeholder="যেমন: ৭.২"
+                      <input type="number" step="0.1" min="3" max="20" value={hba1c} onChange={(e) => setHba1c(e.target.value)}
+                        placeholder={latestLog?.hba1c ? `সর্বশেষ: ${latestLog.hba1c}%` : 'যেমন: ৭.২'}
                         className="w-full bg-cream/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 font-bn focus:bg-white focus:border-accent/20 outline-none transition-all"
                       />
                     </div>
@@ -281,6 +319,29 @@ export const HealthLog = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Latest Reading Summary */}
+                {latestLog && (
+                  <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-ink/5">
+                    <h3 className="font-bn text-lg font-bold text-ink mb-4 flex items-center gap-2">
+                      <Thermometer className="w-5 h-5 text-accent" />
+                      সর্বশেষ রিডিং
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'ওজন', val: latestLog.weight_kg ? `${latestLog.weight_kg} kg` : '--', accent: false },
+                        { label: 'শর্করা', val: latestLog.blood_sugar ? `${latestLog.blood_sugar}` : '--', accent: true },
+                        { label: 'রক্তচাপ', val: latestLog.blood_pressure || '--', accent: false },
+                        { label: 'HbA1c', val: latestLog.hba1c ? `${latestLog.hba1c}%` : '--', accent: false },
+                      ].map((item, i) => (
+                        <div key={i} className="bg-cream/50 p-3 rounded-2xl border border-ink/5 text-center">
+                          <div className="text-[0.6rem] uppercase tracking-wider text-ink-faint font-bold mb-1">{item.label}</div>
+                          <div className={`font-bold text-sm ${item.accent ? 'text-accent' : 'text-ink'}`}>{item.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -292,11 +353,12 @@ export const HealthLog = () => {
               ) : logs.length === 0 ? (
                 <div className="text-center py-20 font-bn text-ink-muted">
                   <History className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <p>কোনো লগ নেই। প্রথমে একটি এন্ট্রি যোগ করুন।</p>
+                  <p className="font-bold mb-2">কোনো লগ নেই</p>
+                  <p className="text-sm opacity-60">প্রথমে একটি এন্ট্রি যোগ করুন</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {logs.map((entry, i) => (
+                  {logs.map((entry) => (
                     <div key={entry.log_id} className="bg-white p-5 rounded-[1.5rem] flex flex-col md:flex-row md:items-center justify-between border border-ink/5 hover:border-accent/20 transition-all gap-4">
                       <div className="flex items-center gap-5">
                         <div className="w-14 h-14 bg-cream rounded-2xl flex flex-col items-center justify-center text-ink hover:bg-accent hover:text-cream transition-all duration-300 shadow-sm">
@@ -314,7 +376,7 @@ export const HealthLog = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 md:gap-8 border-t md:border-t-0 pt-4 md:pt-0 border-ink/5">
+                      <div className="grid grid-cols-4 gap-4 md:gap-6 border-t md:border-t-0 pt-4 md:pt-0 border-ink/5">
                         {entry.weight_kg && (
                           <div className="text-center">
                             <div className="text-[0.6rem] text-ink-faint font-bn font-bold uppercase tracking-wider mb-1">ওজন</div>
@@ -333,6 +395,14 @@ export const HealthLog = () => {
                           <div className="text-center">
                             <div className="text-[0.6rem] text-ink-faint font-bn font-bold uppercase tracking-wider mb-1">রক্তচাপ</div>
                             <div className="font-bold text-ink text-sm">{entry.blood_pressure}</div>
+                          </div>
+                        )}
+                        {entry.hba1c && (
+                          <div className="text-center">
+                            <div className="text-[0.6rem] text-ink-faint font-bn font-bold uppercase tracking-wider mb-1">HbA1c</div>
+                            <div className={`font-bold text-sm ${entry.hba1c > 7 ? 'text-red-500' : 'text-green-600'}`}>
+                              {entry.hba1c}%
+                            </div>
                           </div>
                         )}
                       </div>
@@ -374,15 +444,15 @@ export const HealthLog = () => {
                           <AreaChart data={weightChartData}>
                             <defs>
                               <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#C8472A" stopOpacity={0.15} />
-                                <stop offset="95%" stopColor="#C8472A" stopOpacity={0} />
+                                <stop offset="5%" stopColor={CHART_COLORS.accent} stopOpacity={0.15} />
+                                <stop offset="95%" stopColor={CHART_COLORS.accent} stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F5F0E8" />
-                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9E9890', fontSize: 10 }} dy={10} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_COLORS.grid} />
+                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: CHART_COLORS.tick, fontSize: 10 }} dy={10} />
                             <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
                             <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '12px' }} />
-                            <Area type="monotone" dataKey="weight" stroke="#C8472A" strokeWidth={3} fill="url(#wGrad)" dot={{ r: 4, fill: '#C8472A', strokeWidth: 2, stroke: '#fff' }} />
+                            <Area type="monotone" dataKey="weight" stroke={CHART_COLORS.accent} strokeWidth={3} fill="url(#wGrad)" dot={{ r: 4, fill: CHART_COLORS.accent, strokeWidth: 2, stroke: '#fff' }} />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -403,11 +473,11 @@ export const HealthLog = () => {
                       <div className="h-[240px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={sugarChartData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F5F0E8" />
-                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9E9890', fontSize: 10 }} dy={10} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_COLORS.grid} />
+                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: CHART_COLORS.tick, fontSize: 10 }} dy={10} />
                             <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
                             <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '12px' }} />
-                            <Line type="monotone" dataKey="sugar" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                            <Line type="monotone" dataKey="sugar" stroke={CHART_COLORS.blue} strokeWidth={3} dot={{ r: 4, fill: CHART_COLORS.blue, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
